@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { trackAnalyticsEvent } from "../analytics";
 import { DIFFICULTIES, FEEDBACK_DELAY_MS } from "../config";
 import { createAllyTeam, createOpponentTeam } from "../data/opponents";
 import { getDebuffDefinition } from "../data/debuffs";
@@ -112,6 +113,11 @@ export function PracticeSession({
     const delay = FEEDBACK_DELAY_MS[feedback.kind];
     const transition = window.setTimeout(() => {
       if (results.length >= settings.sessionLength) {
+        trackAnalyticsEvent("session-completed", {
+          class: classDefinition.id,
+          difficulty: settings.difficulty,
+          rounds: settings.sessionLength,
+        });
         setFinished(true);
         setFeedback(null);
         return;
@@ -208,6 +214,11 @@ export function PracticeSession({
   }, [challenge, feedback, finished, paused, settleChallenge, togglePause]);
 
   const restart = useCallback(() => {
+    trackAnalyticsEvent("practice-restarted", {
+      class: classDefinition.id,
+      difficulty: settings.difficulty,
+      rounds: settings.sessionLength,
+    });
     const next = generateChallenge(classDefinition, bindings, enabledSpellIds, null, Date.now());
     settledRef.current = false;
     setOpponents(createOpponentTeam());
@@ -218,7 +229,7 @@ export function PracticeSession({
     setFinished(false);
     setRemainingMs(reactionWindowMs);
     setChallenge(next);
-  }, [bindings, classDefinition, enabledSpellIds, reactionWindowMs]);
+  }, [bindings, classDefinition, enabledSpellIds, reactionWindowMs, settings.difficulty, settings.sessionLength]);
 
   if (finished) {
     return (

@@ -41,6 +41,8 @@ export function ClassSelector({ onSelect }: ClassSelectorProps) {
         <span>and Minimalistic</span>
         <i>·</i>
         <a href="https://github.com/edusierragit/minis-mini-arena-simulator" target="_blank" rel="noreferrer">Source</a>
+        <i>·</i>
+        <a href="https://github.com/edusierragit/minis-mini-arena-simulator/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
       </footer>
     </main>
   );

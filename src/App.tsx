@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { trackAnalyticsEvent } from "./analytics";
 import { getClassDefinition } from "./classes";
 import { ClassSelector } from "./components/ClassSelector";
 import { KeybindConfigurator } from "./components/KeybindConfigurator";
@@ -37,6 +38,7 @@ export default function App() {
   const selectClass = (classId: string) => {
     const classDefinition = getClassDefinition(classId);
     if (!classDefinition?.playable) return;
+    trackAnalyticsEvent("class-selected", { class: classId });
     setSelectedClassId(classId);
     setScreen("bindings");
   };
@@ -49,6 +51,16 @@ export default function App() {
   const changeClass = () => {
     setSelectedClassId(null);
     setScreen("classes");
+  };
+
+  const startPractice = () => {
+    if (!selectedClassId) return;
+    trackAnalyticsEvent("practice-started", {
+      class: selectedClassId,
+      difficulty: settings.difficulty,
+      rounds: settings.sessionLength,
+    });
+    setScreen("practice");
   };
 
   if (screen === "classes" || !selectedClass) {
@@ -82,7 +94,7 @@ export default function App() {
       }}
       onSettingsChange={setSettings}
       onBack={changeClass}
-      onStart={() => setScreen("practice")}
+      onStart={startPractice}
     />
   );
 }
