@@ -1,0 +1,57 @@
+import type { ClassDefinition } from "../types";
+
+export const shaman: ClassDefinition = {
+  id: "shaman",
+  name: "Shaman",
+  icon: "icons/classes/shaman.jpg",
+  playable: true,
+  color: "#0070dd",
+  spells: [
+    {
+      id: "cleanse-spirit",
+      name: "Cleanse Spirit",
+      icon: "icons/shaman/cleanse-spirit.jpg",
+      targetMode: "ally",
+      description: "Remove Curse, Poison or Disease from a teammate.",
+      suggestedBindings: { player: "Shift+1", party1: "Shift+2", party2: "Shift+3" },
+      enabledByDefault: true,
+      dispels: ["curse", "poison", "disease"],
+    },
+    {
+      id: "purge",
+      name: "Purge",
+      icon: "icons/shaman/purge.jpg",
+      targetMode: "arena",
+      description: "Remove beneficial Magic from a specific enemy.",
+      suggestedBindings: { arena1: "Ctrl+1", arena2: "Ctrl+2", arena3: "Ctrl+3" },
+      enabledByDefault: true,
+    },
+    {
+      id: "hex",
+      name: "Hex",
+      icon: "icons/shaman/hex.jpg",
+      targetMode: "arena",
+      description: "Hex a specific arena enemy.",
+      suggestedBindings: { arena1: "1", arena2: "2", arena3: "3" },
+      enabledByDefault: true,
+    },
+    {
+      id: "wind-shear",
+      name: "Wind Shear",
+      icon: "icons/shaman/wind-shear.jpg",
+      targetMode: "arena",
+      description: "Interrupt a specific arena enemy.",
+      suggestedBindings: { arena1: "Alt+1", arena2: "Alt+2", arena3: "Alt+3" },
+      enabledByDefault: true,
+    },
+    {
+      id: "earth-shock",
+      name: "Earth Shock",
+      icon: "icons/shaman/earth-shock.jpg",
+      targetMode: "arena",
+      description: "Optional target-specific shock drill.",
+      suggestedBindings: { arena1: "Shift+Q", arena2: "Shift+W", arena3: "Shift+E" },
+      enabledByDefault: false,
+    },
+  ],
+};

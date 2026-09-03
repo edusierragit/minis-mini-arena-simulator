@@ -47,10 +47,16 @@ export function createOpponentTeam(): ArenaOpponent[] {
   }));
 }
 
-export function createAllyTeam(): ArenaOpponent[] {
+export function createAllyTeam(playerClassId = "mage", playerClassName = "Mage"): ArenaOpponent[] {
   const teammates = [...archetypes].sort(() => Math.random() - 0.5).slice(0, 2);
+  const playerArchetype = archetypes.find((archetype) => archetype.classId === playerClassId);
   const allyArchetypes = [
-    { classId: "mage", className: "Mage", resource: "Mana" as const, resourceColor: "#245fd9" },
+    playerArchetype ?? {
+      classId: playerClassId,
+      className: playerClassName,
+      resource: "Mana" as const,
+      resourceColor: "#245fd9",
+    },
     ...teammates,
   ];
 

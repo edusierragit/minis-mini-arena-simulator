@@ -44,9 +44,22 @@ describe("complete app flow", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.useRealTimers();
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
   });
 
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("offers Mage, Priest, Paladin, Druid, and Shaman as playable classes", () => {
+    render(<App />);
+
+    ["mage", "priest", "paladin", "druid", "shaman"].forEach((classId) => {
+      expect((screen.getByTestId(`${classId}-class-card`) as HTMLButtonElement).disabled).toBe(false);
+    });
+    expect((screen.getByTestId("rogue-class-card") as HTMLButtonElement).disabled).toBe(true);
+  });
 
   it("captures, replaces, clears, and warns about duplicate modifier binds", () => {
     render(<App />);
@@ -85,6 +98,7 @@ describe("complete app flow", () => {
     fireEvent(document.querySelector(".practice-screen")!, practiceEvent);
     expect(practiceEvent.defaultPrevented).toBe(true);
     expect(screen.getByTestId("feedback-copy").textContent).toBe("CORRECT");
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
   });
 
   it("captures the wheel button with modifiers and recognizes it during practice", () => {
@@ -135,10 +149,31 @@ describe("complete app flow", () => {
 
     expect(screen.getByRole("region", { name: "Friendly party frames" })).not.toBeNull();
     expect(screen.getByTestId("active-ally-challenge-icon")).not.toBeNull();
+    expect(document.querySelector(".challenge-callout span")?.textContent).toBe("DISPEL");
+    expect(["Hex", "Curse of Tongues", "Curse of Exhaustion"]).toContain(
+      document.querySelector(".challenge-callout strong")?.textContent,
+    );
     const calloutTarget = document.querySelector(".challenge-callout b")?.textContent;
     const functionKey = calloutTarget === "SELF" ? "F1" : calloutTarget === "PARTY 1" ? "F2" : "F3";
     fireEvent.keyDown(window, { key: functionKey, altKey: true });
     expect(screen.getByTestId("feedback-copy").textContent).toBe("CORRECT");
+  });
+
+  it("persists the sound toggle", () => {
+    const first = render(<App />);
+    chooseMage();
+    capture("bind-polymorph-1", { key: "1", shiftKey: true });
+    fireEvent.click(screen.getByTestId("start-practice"));
+    fireEvent.click(screen.getByRole("button", { name: "Sound on" }));
+    expect(screen.getByRole("button", { name: "Sound off" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.keyDown(window, { key: "1", shiftKey: true });
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Binds" }));
+    first.unmount();
+
+    render(<App />);
+    fireEvent.click(screen.getByTestId("start-practice"));
+    expect(screen.getByRole("button", { name: "Sound off" })).not.toBeNull();
   });
 
   it("persists selected class, binds, and difficulty across remounts", () => {

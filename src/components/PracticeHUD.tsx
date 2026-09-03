@@ -6,7 +6,9 @@ interface PracticeHUDProps {
   sessionLength: number;
   remainingRatio: number;
   paused: boolean;
+  muted: boolean;
   onPauseToggle: () => void;
+  onMuteToggle: () => void;
   onRestart: () => void;
   onExit: () => void;
 }
@@ -17,7 +19,9 @@ export function PracticeHUD({
   sessionLength,
   remainingRatio,
   paused,
+  muted,
   onPauseToggle,
+  onMuteToggle,
   onRestart,
   onExit,
 }: PracticeHUDProps) {
@@ -26,6 +30,7 @@ export function PracticeHUD({
       <header className="practice-topbar">
         <div className="practice-brand"><span>MINI&apos;S MINI</span><strong>ARENA SIMULATOR</strong></div>
         <div className="hud-actions">
+          <button type="button" onClick={onMuteToggle} aria-pressed={muted}>{muted ? "Sound off" : "Sound on"}</button>
           <button type="button" onClick={onPauseToggle}>{paused ? "Resume" : "Pause"} <kbd>Esc</kbd></button>
           <button type="button" onClick={onRestart}>Restart</button>
           <button type="button" onClick={onExit}>Binds</button>

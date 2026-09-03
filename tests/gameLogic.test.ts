@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { mage } from "../src/classes/mage";
+import { paladin } from "../src/classes/paladin";
+import { priest } from "../src/classes/priest";
+import { shaman } from "../src/classes/shaman";
+import { getDebuffDefinition } from "../src/data/debuffs";
 import { generateChallenge, getConfiguredChallenges } from "../src/game/challengeGenerator";
 import { bindingKey, getDuplicateBindings, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../src/game/keybindUtils";
 import { calculateStats } from "../src/game/scoring";
@@ -70,6 +74,22 @@ describe("generic challenge generation", () => {
     );
     expect(`${challenge.spellId}:${challenge.target}`).not.toBe("polymorph:arena1");
     vi.restoreAllMocks();
+  });
+
+  it.each([
+    [mage, "remove-curse", ["curse"]],
+    [priest, "dispel-magic-ally", ["magic"]],
+    [paladin, "cleanse", ["magic", "poison", "disease"]],
+    [shaman, "cleanse-spirit", ["curse", "poison", "disease"]],
+  ] as const)("only shows debuffs that %s can remove", (classDefinition, spellId, allowedTypes) => {
+    const dispelBindings = { [bindingKey(spellId, "party1")]: "Shift+1" };
+
+    for (let index = 0; index < 40; index += 1) {
+      const challenge = generateChallenge(classDefinition, dispelBindings, [spellId], null, index);
+      const debuff = challenge.cueId ? getDebuffDefinition(challenge.cueId) : null;
+      expect(debuff).not.toBeNull();
+      expect(allowedTypes).toContain(debuff!.dispelType);
+    }
   });
 });
 

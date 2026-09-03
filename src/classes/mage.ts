@@ -118,6 +118,7 @@ export const mage: ClassDefinition = {
       description: "Optional Level 2 drill for Self, Party 1 and Party 2.",
       suggestedBindings: { player: "Alt+F1", party1: "Alt+F2", party2: "Alt+F3" },
       enabledByDefault: false,
+      dispels: ["curse"],
     },
   ],
 };

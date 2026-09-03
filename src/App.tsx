@@ -56,6 +56,7 @@ export default function App() {
         bindings={bindings}
         enabledSpellIds={enabledSpellIds}
         settings={settings}
+        onSettingsChange={setSettings}
         onChangeBinds={() => setScreen("bindings")}
         onChangeClass={changeClass}
       />

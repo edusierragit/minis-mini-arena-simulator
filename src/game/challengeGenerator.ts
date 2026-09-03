@@ -1,4 +1,5 @@
 import type { Bindings, Challenge, ClassDefinition, TargetId, TargetMode } from "../types";
+import { trainingDebuffs } from "../data/debuffs";
 import { bindingKey } from "./keybindUtils";
 import { getTargetsForMode } from "./targets";
 
@@ -37,12 +38,20 @@ export function generateChallenge(
     ? allCandidates.filter((candidate) => candidate.spellId !== previous.spellId || candidate.target !== previous.target)
     : allCandidates;
   const choice = nonRepeating[Math.floor(Math.random() * nonRepeating.length)];
+  const spell = classDefinition.spells.find((candidate) => candidate.id === choice.spellId);
+  const compatibleCues = spell?.dispels
+    ? trainingDebuffs.filter((debuff) => spell.dispels?.includes(debuff.dispelType))
+    : [];
+  const cue = compatibleCues.length
+    ? compatibleCues[Math.floor(Math.random() * compatibleCues.length)]
+    : null;
 
   return {
     id,
     spellId: choice.spellId,
     target: choice.target,
     targetMode: choice.targetMode,
+    cueId: cue?.id ?? null,
     startedAt: performance.now(),
     elapsedMs: 0,
   };

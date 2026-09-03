@@ -12,6 +12,7 @@ export const DIFFICULTIES: Record<
 export const DEFAULT_SETTINGS: PracticeSettings = {
   difficulty: "normal",
   sessionLength: 30,
+  muted: false,
 };
 
 export const SESSION_LENGTHS = [10, 30, 50] as const;

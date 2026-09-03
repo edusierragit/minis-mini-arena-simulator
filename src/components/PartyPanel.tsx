@@ -6,7 +6,7 @@ import { AllyFrame } from "./AllyFrame";
 interface PartyPanelProps {
   allies: ArenaOpponent[];
   target: TargetId | null;
-  spell: SpellDefinition | null;
+  spell: Pick<SpellDefinition, "name" | "icon"> | null;
   feedback: ResultKind | null;
 }
 

@@ -5,7 +5,7 @@ import { ArenaFrame } from "./ArenaFrame";
 interface GladiusPanelProps {
   opponents: ArenaOpponent[];
   target: ArenaTarget | null;
-  spell: SpellDefinition | null;
+  spell: Pick<SpellDefinition, "name" | "icon"> | null;
   feedback: ResultKind | null;
 }
 

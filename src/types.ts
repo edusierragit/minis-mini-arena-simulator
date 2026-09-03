@@ -1,6 +1,7 @@
 export type ArenaTarget = 1 | 2 | 3;
 export type TargetMode = "arena" | "ally";
 export type TargetId = "arena1" | "arena2" | "arena3" | "player" | "party1" | "party2";
+export type DispelType = "curse" | "magic" | "poison" | "disease";
 
 export interface SpellDefinition {
   id: string;
@@ -10,6 +11,7 @@ export interface SpellDefinition {
   description?: string;
   suggestedBindings?: Partial<Record<TargetId, string>>;
   enabledByDefault?: boolean;
+  dispels?: DispelType[];
 }
 
 export interface ClassDefinition {
@@ -29,6 +31,7 @@ export interface Challenge {
   spellId: string;
   target: TargetId;
   targetMode: TargetMode;
+  cueId: string | null;
   startedAt: number;
   elapsedMs: number;
 }
@@ -48,4 +51,5 @@ export type DifficultyId = "slow" | "normal" | "fast";
 export interface PracticeSettings {
   difficulty: DifficultyId;
   sessionLength: number;
+  muted: boolean;
 }

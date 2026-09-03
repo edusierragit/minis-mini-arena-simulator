@@ -1,8 +1,10 @@
 # Mini's Mini Arena Simulator
 
-A standalone, Gladius-inspired keyboard reaction trainer for practicing WoW arena1 / arena2 / arena3 muscle memory. The MVP is Mage-only, runs entirely in the browser, and neither connects to nor automates World of Warcraft.
+A standalone, Gladius-inspired keyboard reaction trainer for practicing WoW arena and party-target muscle memory. It runs entirely in the browser and neither connects to nor automates World of Warcraft.
 
-Keyboard keys, modifier combinations, WheelUp, WheelDown, and MiddleClick are supported. Abilities can be enabled or disabled individually; the default Mage pool is Frostbolt Rank 1, Deep Freeze, Counterspell, and Polymorph. The optional Remove Curse drill adds Self, Party 1, and Party 2 targets as the first ally-training mode.
+Mage, Priest, Paladin, Druid, and Shaman are playable. Keyboard keys, modifier combinations, WheelUp, WheelDown, and MiddleClick are supported. Abilities can be enabled or disabled individually; the default Mage pool is Frostbolt Rank 1, Deep Freeze, Counterspell, and Polymorph.
+
+Ally-dispel drills show real WotLK debuff icons on Self, Party 1, or Party 2. Challenges respect dispel categories (Curse, Magic, Poison, and Disease), so a class is only asked to remove effects it can actually dispel. Bundled WotLK success/failure sounds can be muted from the practice HUD.
 
 ## Install and run
 
@@ -30,9 +32,11 @@ Vite uses relative asset paths, so the same build also works when uploaded to Ve
 
 ## Add game data
 
-- Mage spell definitions live in `src/classes/mage.ts`.
+- Class and spell definitions live in `src/classes/` (for example `src/classes/mage.ts`).
+- Ally-dispel cue definitions live in `src/data/debuffs.ts`.
 - Bundled WoW icon assets live in `public/icons/`.
-- To add a Mage spell, place its original icon in `public/icons/mage/` and add one `SpellDefinition` entry to `src/classes/mage.ts`. Set `targetMode` to `arena` or `ally`; the generic bind configurator and practice engine will pick it up automatically.
+- Bundled WoW UI sounds live in `public/audio/`.
+- To add a spell, place its original icon in that class folder and add one `SpellDefinition` entry to the class file. Set `targetMode` to `arena` or `ally`; for a dispel, add the supported `dispels` categories. The generic bind configurator and practice engine will pick it up automatically.
 - To add a class, create another data file under `src/classes/`, export a `ClassDefinition`, and register it in `src/classes/index.ts`. The game engine contains no Mage-specific challenge logic.
 
 The included spell icons use the canonical client texture artwork served by the Wowhead/Wowhead CDN for the corresponding WotLK spell records. World of Warcraft and its assets are trademarks and property of Blizzard Entertainment; this fan-made trainer is not affiliated with Blizzard.

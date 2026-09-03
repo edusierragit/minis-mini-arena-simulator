@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DIFFICULTIES, FEEDBACK_DELAY_MS } from "../config";
 import { createAllyTeam, createOpponentTeam } from "../data/opponents";
+import { getDebuffDefinition } from "../data/debuffs";
 import { generateChallenge } from "../game/challengeGenerator";
 import { bindingKey, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../game/keybindUtils";
 import { calculateStats } from "../game/scoring";
 import { getArenaTargetNumber, getTargetDefinition } from "../game/targets";
+import { playFeedbackSound, prepareFeedbackAudio } from "../audio/gameAudio";
 import type { Bindings, Challenge, ClassDefinition, PracticeResult, PracticeSettings, ResultKind } from "../types";
 import { GladiusPanel } from "./GladiusPanel";
 import { PartyPanel } from "./PartyPanel";
@@ -16,6 +18,7 @@ interface PracticeSessionProps {
   bindings: Bindings;
   enabledSpellIds: string[];
   settings: PracticeSettings;
+  onSettingsChange: (settings: PracticeSettings) => void;
   onChangeBinds: () => void;
   onChangeClass: () => void;
 }
@@ -30,12 +33,13 @@ export function PracticeSession({
   bindings,
   enabledSpellIds,
   settings,
+  onSettingsChange,
   onChangeBinds,
   onChangeClass,
 }: PracticeSessionProps) {
   const reactionWindowMs = DIFFICULTIES[settings.difficulty].windowMs;
   const [opponents, setOpponents] = useState(createOpponentTeam);
-  const [allies, setAllies] = useState(createAllyTeam);
+  const [allies, setAllies] = useState(() => createAllyTeam(classDefinition.id, classDefinition.name));
   const [challenge, setChallenge] = useState<Challenge>(() =>
     generateChallenge(classDefinition, bindings, enabledSpellIds, null, Date.now()),
   );
@@ -49,6 +53,12 @@ export function PracticeSession({
 
   const stats = useMemo(() => calculateStats(results, reactionWindowMs), [results, reactionWindowMs]);
   const activeSpell = classDefinition.spells.find((spell) => spell.id === challenge?.spellId) ?? null;
+  const activeDebuff = challenge.cueId ? getDebuffDefinition(challenge.cueId) : null;
+  const challengeVisual = activeDebuff ?? activeSpell;
+
+  useEffect(() => {
+    prepareFeedbackAudio();
+  }, []);
 
   const settleChallenge = useCallback((kind: ResultKind, pressedBind: string | null) => {
     if (!challenge || feedback || paused || settledRef.current) return;
@@ -74,8 +84,9 @@ export function PracticeSession({
       },
     ]);
     setFeedback({ kind: finalKind, expectedBind });
+    playFeedbackSound(finalKind, settings.muted);
     setRemainingMs(Math.max(0, reactionWindowMs - elapsed));
-  }, [bindings, challenge, feedback, paused, reactionWindowMs]);
+  }, [bindings, challenge, feedback, paused, reactionWindowMs, settings.muted]);
 
   useEffect(() => {
     if (!challenge || feedback || paused || finished) return;
@@ -196,7 +207,7 @@ export function PracticeSession({
     const next = generateChallenge(classDefinition, bindings, enabledSpellIds, null, Date.now());
     settledRef.current = false;
     setOpponents(createOpponentTeam());
-    setAllies(createAllyTeam());
+    setAllies(createAllyTeam(classDefinition.id, classDefinition.name));
     setResults([]);
     setFeedback(null);
     setPaused(false);
@@ -239,7 +250,9 @@ export function PracticeSession({
         sessionLength={settings.sessionLength}
         remainingRatio={remainingMs / reactionWindowMs}
         paused={paused}
+        muted={settings.muted}
         onPauseToggle={togglePause}
+        onMuteToggle={() => onSettingsChange({ ...settings, muted: !settings.muted })}
         onRestart={restart}
         onExit={onChangeBinds}
       />
@@ -250,8 +263,8 @@ export function PracticeSession({
             <strong data-testid="feedback-copy">{feedbackCopy}</strong>
           ) : (
             <>
-              <span>CAST</span>
-              <strong>{activeSpell?.name}</strong>
+              <span>{activeDebuff ? "DISPEL" : "CAST"}</span>
+              <strong>{activeDebuff?.name ?? activeSpell?.name}</strong>
               <i>ON</i>
               <b>{targetDefinition.label.toUpperCase()}</b>
             </>
@@ -262,14 +275,14 @@ export function PracticeSession({
           <GladiusPanel
             opponents={opponents}
             target={arenaTarget}
-            spell={challenge.targetMode === "arena" ? activeSpell : null}
+            spell={challenge.targetMode === "arena" ? challengeVisual : null}
             feedback={feedback?.kind ?? null}
           />
           {hasAllyTraining && (
             <PartyPanel
               allies={allies}
               target={allyTarget}
-              spell={challenge.targetMode === "ally" ? activeSpell : null}
+              spell={challenge.targetMode === "ally" ? challengeVisual : null}
               feedback={feedback?.kind ?? null}
             />
           )}

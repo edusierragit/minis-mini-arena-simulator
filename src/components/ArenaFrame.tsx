@@ -5,7 +5,7 @@ import { assetUrl } from "../utils/assets";
 interface ArenaFrameProps {
   target: ArenaTarget;
   opponent: ArenaOpponent;
-  activeSpell: SpellDefinition | null;
+  activeSpell: Pick<SpellDefinition, "name" | "icon"> | null;
   feedback: ResultKind | null;
 }
 

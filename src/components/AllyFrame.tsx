@@ -6,7 +6,7 @@ interface AllyFrameProps {
   targetId: TargetId;
   label: string;
   opponent: ArenaOpponent;
-  activeSpell: SpellDefinition | null;
+  activeSpell: Pick<SpellDefinition, "name" | "icon"> | null;
   feedback: ResultKind | null;
 }
 
