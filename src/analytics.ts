@@ -26,7 +26,6 @@ declare global {
 }
 
 const GOATCOUNTER_SCRIPT_ID = "goatcounter-analytics";
-const OPT_OUT_STORAGE_KEY = "minis-mini-arena-simulator:analytics-opt-out";
 const MAX_QUEUED_EVENTS = 20;
 const queuedGoatCounterEvents: GoatCounterVars[] = [];
 
@@ -60,32 +59,6 @@ function slug(value: string | number | boolean): string {
     .toLowerCase()
     .replace(/[^a-z0-9.]+/g, "-")
     .replace(/^-+|-+$/g, "") || "unknown";
-}
-
-export function browserRequestsNoTracking(): boolean {
-  if (typeof navigator === "undefined") return false;
-  return navigator.doNotTrack === "1";
-}
-
-export function isAnalyticsOptedOut(): boolean {
-  try {
-    return localStorage.getItem(OPT_OUT_STORAGE_KEY) === "1";
-  } catch {
-    return true;
-  }
-}
-
-export function setAnalyticsOptOut(optedOut: boolean) {
-  try {
-    if (optedOut) localStorage.setItem(OPT_OUT_STORAGE_KEY, "1");
-    else localStorage.removeItem(OPT_OUT_STORAGE_KEY);
-  } catch {
-    // Treat unavailable storage as an implicit opt-out.
-  }
-}
-
-export function analyticsCollectionAllowed(): boolean {
-  return !browserRequestsNoTracking() && !isAnalyticsOptedOut();
 }
 
 function pageOpenDimensions(): AnalyticsDimensions {
@@ -160,8 +133,6 @@ function initializeGoatCounter(endpoint: string) {
 }
 
 export function initializeAnalytics() {
-  if (!analyticsCollectionAllowed()) return;
-
   const firstPartyEndpoint = configuredFirstPartyEndpoint();
   if (firstPartyEndpoint) {
     sendFirstPartyEvent(firstPartyEndpoint, "site-opened", pageOpenDimensions());
@@ -175,8 +146,6 @@ export function initializeAnalytics() {
 }
 
 export function trackAnalyticsEvent(name: AnalyticsEventName, dimensions: AnalyticsDimensions = {}) {
-  if (!analyticsCollectionAllowed()) return;
-
   const firstPartyEndpoint = configuredFirstPartyEndpoint();
   if (firstPartyEndpoint) {
     sendFirstPartyEvent(firstPartyEndpoint, name, dimensions);

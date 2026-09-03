@@ -15,6 +15,6 @@ The following aggregate activity can be counted:
 
 The game does **not** send or store configured keys or mouse buttons, IP addresses, player names, answers, scores, reaction times, user-agent strings, or local storage contents. The first-party database stores one counter per day and category combination rather than individual event records.
 
-Collection is disabled when the browser sends Do Not Track (`DNT: 1`). Players can also use the **Stats: on/off** control on the class-selection screen; that choice stays in their own browser. Global Privacy Control is also compatible with this design: no personal information is sold or shared in the first place.
+Because collection is limited to anonymous aggregate counters and uses no cookies or persistent visitor identifiers, the app does not expose a per-browser analytics switch. Global Privacy Control remains compatible with this design: no personal information is sold or shared in the first place.
 
 Analytics failures never prevent the game from loading or running. The statistics are used only to understand adoption and improve the trainer.

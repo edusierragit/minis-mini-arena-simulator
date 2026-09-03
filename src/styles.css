@@ -107,9 +107,6 @@ button:focus-visible { outline: 2px solid #d3c2ff; outline-offset: 2px; }
 .creator-credit i { font-style: normal; }
 .creator-credit a { color: #776c82; text-decoration: none; }
 .creator-credit a:hover { color: #bca8d0; }
-.analytics-toggle { padding: 0; border: 0; background: none; color: #776c82; font: inherit; cursor: pointer; }
-.analytics-toggle:hover:not(:disabled) { color: #bca8d0; }
-.analytics-toggle:disabled { color: #514a59; cursor: default; }
 
 .analytics-screen { display: grid; place-items: start center; padding-top: 48px; }
 .analytics-card { width: min(1040px, 100%); border: 1px solid #31283c; background: rgba(12, 9, 17, 0.96); padding: 28px; box-shadow: 0 24px 80px #0008; }

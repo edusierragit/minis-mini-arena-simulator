@@ -77,29 +77,16 @@ describe("anonymous analytics", () => {
     });
   });
 
-  it("honors the explicit local opt-out", async () => {
+  it("counts anonymous aggregate usage even when DNT is enabled", async () => {
     vi.stubEnv("VITE_FIRST_PARTY_ANALYTICS_ENDPOINT", "/api/analytics");
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
-    const { initializeAnalytics, setAnalyticsOptOut, trackAnalyticsEvent } = await import("../src/analytics");
-
-    setAnalyticsOptOut(true);
-    initializeAnalytics();
-    trackAnalyticsEvent("class-selected", { class: "mage" });
-
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it("honors the browser Do Not Track signal", async () => {
-    vi.stubEnv("VITE_FIRST_PARTY_ANALYTICS_ENDPOINT", "/api/analytics");
-    const fetchMock = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);
     Object.defineProperty(navigator, "doNotTrack", { configurable: true, value: "1" });
     const { initializeAnalytics } = await import("../src/analytics");
 
     initializeAnalytics();
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     Object.defineProperty(navigator, "doNotTrack", { configurable: true, value: null });
   });
 });

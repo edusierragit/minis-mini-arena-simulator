@@ -18,10 +18,6 @@ function emptyResponse(status = 204, skipped?: string): Response {
 }
 
 export const onRequestPost: PagesHandler<AnalyticsEnv> = async ({ request, env }) => {
-  if (request.headers.get("DNT") === "1") {
-    return emptyResponse(204, "privacy-signal");
-  }
-
   const requestUrl = new URL(request.url);
   const origin = request.headers.get("Origin");
   if (origin && origin !== requestUrl.origin) return jsonResponse({ error: "Origin not allowed" }, 403);

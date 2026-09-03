@@ -81,13 +81,18 @@ describe("Cloudflare analytics payload validation", () => {
     expect(boundValues.slice(1)).toEqual(["practice-started", "mage", "fast", 30, "XX", "", "", ""]);
   });
 
-  it("honors DNT before touching the database", async () => {
+  it("counts anonymous aggregate usage even when DNT is enabled", async () => {
     let prepared = false;
+    const statement: D1PreparedStatement = {
+      bind: () => statement,
+      run: async () => ({ results: [], success: true }),
+      all: async () => ({ results: [], success: true }),
+    };
     const env: AnalyticsEnv = {
       ANALYTICS_DB: {
         prepare: () => {
           prepared = true;
-          throw new Error("should not prepare a query");
+          return statement;
         },
       },
     };
@@ -98,7 +103,7 @@ describe("Cloudflare analytics payload validation", () => {
     });
 
     expect(response.status).toBe(204);
-    expect(response.headers.get("X-Analytics-Skipped")).toBe("privacy-signal");
-    expect(prepared).toBe(false);
+    expect(response.headers.get("X-Analytics-Skipped")).toBeNull();
+    expect(prepared).toBe(true);
   });
 });
