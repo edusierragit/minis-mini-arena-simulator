@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:cloudflare": "tsc -b && vite build --mode cloudflare",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "preview": "vite preview"

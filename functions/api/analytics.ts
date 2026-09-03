@@ -1,0 +1,67 @@
+import { normalizeAnalyticsPayload } from "../_analytics";
+import { jsonResponse } from "../_types";
+import type { AnalyticsEnv, PagesHandler } from "../_types";
+
+const MAX_BODY_BYTES = 4096;
+
+interface CloudflareRequest extends Request {
+  cf?: { country?: string };
+}
+
+function emptyResponse(status = 204, skipped?: string): Response {
+  const headers = new Headers({
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+  });
+  if (skipped) headers.set("X-Analytics-Skipped", skipped);
+  return new Response(null, { status, headers });
+}
+
+export const onRequestPost: PagesHandler<AnalyticsEnv> = async ({ request, env }) => {
+  if (request.headers.get("DNT") === "1") {
+    return emptyResponse(204, "privacy-signal");
+  }
+
+  const requestUrl = new URL(request.url);
+  const origin = request.headers.get("Origin");
+  if (origin && origin !== requestUrl.origin) return jsonResponse({ error: "Origin not allowed" }, 403);
+
+  const declaredLength = Number(request.headers.get("Content-Length") ?? 0);
+  if (declaredLength > MAX_BODY_BYTES) return jsonResponse({ error: "Payload too large" }, 413);
+  if (!env.ANALYTICS_DB) return jsonResponse({ error: "Analytics database is not configured" }, 503);
+
+  try {
+    const rawBody = await request.text();
+    if (rawBody.length > MAX_BODY_BYTES) return jsonResponse({ error: "Payload too large" }, 413);
+
+    const cloudflareRequest = request as CloudflareRequest;
+    const record = normalizeAnalyticsPayload(JSON.parse(rawBody), cloudflareRequest.cf?.country);
+    if (!record) return jsonResponse({ error: "Invalid analytics event" }, 400);
+
+    const day = new Date().toISOString().slice(0, 10);
+    await env.ANALYTICS_DB.prepare(`
+      INSERT INTO analytics_daily (
+        day, event, class_id, difficulty, rounds, country, referrer, source, campaign, count
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+      ON CONFLICT (day, event, class_id, difficulty, rounds, country, referrer, source, campaign)
+      DO UPDATE SET count = count + 1
+    `).bind(
+      day,
+      record.event,
+      record.classId,
+      record.difficulty,
+      record.rounds,
+      record.country,
+      record.referrer,
+      record.source,
+      record.campaign,
+    ).run();
+
+    return emptyResponse();
+  } catch (error) {
+    console.error("Failed to record analytics event", error);
+    return jsonResponse({ error: "Unable to record event" }, 503);
+  }
+};
+
+export const onRequestOptions: PagesHandler<AnalyticsEnv> = async () => emptyResponse();

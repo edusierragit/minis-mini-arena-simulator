@@ -6,7 +6,7 @@ Mage, Rogue, Priest, Paladin, Druid, and Shaman are playable. Keyboard keys, mod
 
 Built by [Eduardo Sierra](https://x.com/eduardo39657119) and **Minimalistic**.
 
-Optional, privacy-friendly usage analytics are supported through GoatCounter. Copy `.env.example` to `.env.production` and set the public `VITE_GOATCOUNTER_ENDPOINT`. Only aggregate visits, total site opens, class selections, and session lifecycle events are recorded; binds and performance results never leave the player's browser. See [PRIVACY.md](PRIVACY.md).
+Privacy-friendly usage analytics support both the temporary GoatCounter integration on GitHub Pages and a same-origin Cloudflare Pages Function backed by aggregate D1 counters. Only site opens, acquisition data, class selections, and session lifecycle events are recorded; binds and performance results never leave the player's browser. See [PRIVACY.md](PRIVACY.md).
 
 Ally-dispel drills show real WotLK debuff icons on Self, Party 1, or Party 2. Challenges respect dispel categories (Curse, Magic, Poison, and Disease), so a class is only asked to remove effects it can actually dispel. Bundled WotLK success/failure sounds can be muted from the practice HUD.
 
@@ -33,6 +33,10 @@ The static output is written to `dist/`.
 4. Push to `main`, or run the included **Deploy to GitHub Pages** workflow manually.
 
 Vite uses relative asset paths, so the same build also works when uploaded to Vercel or another static host.
+
+## Deploy free on Cloudflare Pages
+
+Cloudflare is the recommended canonical deployment when first-party analytics are enabled. Use `npm run build:cloudflare`, publish `dist/`, then bind the included Pages Functions to D1. The existing GitHub Pages URL remains live until the Cloudflare version is tested. Follow [the staged migration guide](docs/CLOUDFLARE_DEPLOYMENT.md).
 
 ## Add game data
 

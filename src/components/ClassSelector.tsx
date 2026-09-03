@@ -1,3 +1,11 @@
+import { useState } from "react";
+import {
+  analyticsCollectionAllowed,
+  browserRequestsNoTracking,
+  initializeAnalytics,
+  isAnalyticsOptedOut,
+  setAnalyticsOptOut,
+} from "../analytics";
 import { classDefinitions } from "../classes";
 import { assetUrl } from "../utils/assets";
 
@@ -6,6 +14,17 @@ interface ClassSelectorProps {
 }
 
 export function ClassSelector({ onSelect }: ClassSelectorProps) {
+  const [analyticsAllowed, setAnalyticsAllowed] = useState(analyticsCollectionAllowed);
+  const browserOptOut = browserRequestsNoTracking();
+
+  const toggleAnalytics = () => {
+    if (browserOptOut) return;
+    const nextAllowed = isAnalyticsOptedOut();
+    setAnalyticsOptOut(!nextAllowed);
+    setAnalyticsAllowed(nextAllowed);
+    if (nextAllowed) initializeAnalytics();
+  };
+
   return (
     <main className="screen class-screen">
       <div className="title-block">
@@ -43,6 +62,16 @@ export function ClassSelector({ onSelect }: ClassSelectorProps) {
         <a href="https://github.com/edusierragit/minis-mini-arena-simulator" target="_blank" rel="noreferrer">Source</a>
         <i>·</i>
         <a href="https://github.com/edusierragit/minis-mini-arena-simulator/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
+        <i>·</i>
+        <button
+          type="button"
+          className="analytics-toggle"
+          onClick={toggleAnalytics}
+          disabled={browserOptOut}
+          title={browserOptOut ? "Disabled by your browser privacy signal" : "Toggle anonymous usage statistics"}
+        >
+          Stats: {browserOptOut ? "browser opt-out" : analyticsAllowed ? "on" : "off"}
+        </button>
       </footer>
     </main>
   );

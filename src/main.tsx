@@ -2,12 +2,19 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { initializeAnalytics } from "./analytics";
+import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
+import { redirectToCanonicalDeployment } from "./deployment";
 import "./styles.css";
 
-initializeAnalytics();
+const redirecting = redirectToCanonicalDeployment();
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+if (!redirecting) {
+  const showingStats = new URLSearchParams(window.location.search).has("stats");
+  if (!showingStats) initializeAnalytics();
+
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      {showingStats ? <AnalyticsDashboard /> : <App />}
+    </StrictMode>,
+  );
+}

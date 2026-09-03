@@ -5,12 +5,15 @@ describe("anonymous analytics", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    localStorage.clear();
     document.head.innerHTML = "";
     delete window.goatcounter;
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
     delete window.goatcounter;
   });
 
@@ -39,7 +42,7 @@ describe("anonymous analytics", () => {
     script?.dispatchEvent(new Event("load"));
 
     expect(count).toHaveBeenNthCalledWith(1, {
-      path: "event/site-opened",
+      path: "event/site-opened/referrer-direct",
       title: "Site Opened",
       event: true,
       no_session: true,
@@ -50,5 +53,53 @@ describe("anonymous analytics", () => {
       event: true,
       no_session: true,
     });
+  });
+
+  it("uses the same-origin Cloudflare endpoint without loading a third-party script", async () => {
+    vi.stubEnv("VITE_FIRST_PARTY_ANALYTICS_ENDPOINT", "/api/analytics");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { initializeAnalytics, trackAnalyticsEvent } = await import("../src/analytics");
+
+    initializeAnalytics();
+    trackAnalyticsEvent("practice-started", { class: "mage", difficulty: "normal", rounds: 30 });
+
+    expect(document.querySelector("#goatcounter-analytics")).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:3000/api/analytics");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      event: "site-opened",
+      dimensions: { referrer: "direct" },
+    });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({
+      event: "practice-started",
+      dimensions: { class: "mage", difficulty: "normal", rounds: 30 },
+    });
+  });
+
+  it("honors the explicit local opt-out", async () => {
+    vi.stubEnv("VITE_FIRST_PARTY_ANALYTICS_ENDPOINT", "/api/analytics");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const { initializeAnalytics, setAnalyticsOptOut, trackAnalyticsEvent } = await import("../src/analytics");
+
+    setAnalyticsOptOut(true);
+    initializeAnalytics();
+    trackAnalyticsEvent("class-selected", { class: "mage" });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("honors the browser Do Not Track signal", async () => {
+    vi.stubEnv("VITE_FIRST_PARTY_ANALYTICS_ENDPOINT", "/api/analytics");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    Object.defineProperty(navigator, "doNotTrack", { configurable: true, value: "1" });
+    const { initializeAnalytics } = await import("../src/analytics");
+
+    initializeAnalytics();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    Object.defineProperty(navigator, "doNotTrack", { configurable: true, value: null });
   });
 });
