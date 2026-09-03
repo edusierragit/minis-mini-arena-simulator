@@ -36,10 +36,9 @@ export function ClassSelector({ onSelect }: ClassSelectorProps) {
 
       <p className="keyboard-note">Desktop keyboard recommended · No game client connection</p>
       <footer className="creator-credit">
-        <span>Concept by Minimalistic</span>
-        <i>·</i>
         <span>Built by</span>
         <a href="https://x.com/eduardo39657119" target="_blank" rel="noreferrer">Eduardo Sierra</a>
+        <span>and Minimalistic</span>
         <i>·</i>
         <a href="https://github.com/edusierragit/minis-mini-arena-simulator" target="_blank" rel="noreferrer">Source</a>
       </footer>
