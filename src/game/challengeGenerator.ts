@@ -1,29 +1,36 @@
-import type { ArenaTarget, Bindings, Challenge, ClassDefinition } from "../types";
+import type { Bindings, Challenge, ClassDefinition, TargetId, TargetMode } from "../types";
 import { bindingKey } from "./keybindUtils";
+import { getTargetsForMode } from "./targets";
 
 interface ChallengeCandidate {
   spellId: string;
-  target: ArenaTarget;
+  target: TargetId;
+  targetMode: TargetMode;
 }
 
 export function getConfiguredChallenges(
   classDefinition: ClassDefinition,
   bindings: Bindings,
+  enabledSpellIds?: string[],
 ): ChallengeCandidate[] {
+  const enabled = enabledSpellIds ? new Set(enabledSpellIds) : null;
   return classDefinition.spells.flatMap((spell) =>
-    ([1, 2, 3] as ArenaTarget[])
-      .filter((target) => Boolean(bindings[bindingKey(spell.id, target)]))
-      .map((target) => ({ spellId: spell.id, target })),
+    enabled && !enabled.has(spell.id)
+      ? []
+      : getTargetsForMode(spell.targetMode)
+        .filter((target) => Boolean(bindings[bindingKey(spell.id, target.id)]))
+        .map((target) => ({ spellId: spell.id, target: target.id, targetMode: spell.targetMode })),
   );
 }
 
 export function generateChallenge(
   classDefinition: ClassDefinition,
   bindings: Bindings,
+  enabledSpellIds: string[] | undefined,
   previous: Pick<Challenge, "spellId" | "target"> | null,
   id: number,
 ): Challenge {
-  const allCandidates = getConfiguredChallenges(classDefinition, bindings);
+  const allCandidates = getConfiguredChallenges(classDefinition, bindings, enabledSpellIds);
   if (allCandidates.length === 0) throw new Error("Cannot create a challenge without configured bindings.");
 
   const nonRepeating = previous && allCandidates.length > 1
@@ -35,6 +42,7 @@ export function generateChallenge(
     id,
     spellId: choice.spellId,
     target: choice.target,
+    targetMode: choice.targetMode,
     startedAt: performance.now(),
     elapsedMs: 0,
   };

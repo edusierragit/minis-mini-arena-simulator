@@ -46,3 +46,19 @@ export function createOpponentTeam(): ArenaOpponent[] {
     ],
   }));
 }
+
+export function createAllyTeam(): ArenaOpponent[] {
+  const teammates = [...archetypes].sort(() => Math.random() - 0.5).slice(0, 2);
+  const allyArchetypes = [
+    { classId: "mage", className: "Mage", resource: "Mana" as const, resourceColor: "#245fd9" },
+    ...teammates,
+  ];
+
+  return allyArchetypes.map((archetype, index) => ({
+    ...archetype,
+    name: index === 0 ? "Mini" : names[(index * 4 + Math.floor(Math.random() * names.length)) % names.length],
+    healthPercent: 68 + Math.floor(Math.random() * 33),
+    resourcePercent: 42 + Math.floor(Math.random() * 57),
+    statusIcons: [statusPool[(index + 1) % statusPool.length]],
+  }));
+}

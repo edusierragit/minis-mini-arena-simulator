@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { mage } from "../src/classes/mage";
 import { generateChallenge, getConfiguredChallenges } from "../src/game/challengeGenerator";
-import { bindingKey, getDuplicateBindings, keyboardEventToBind, wheelEventToBind } from "../src/game/keybindUtils";
+import { bindingKey, getDuplicateBindings, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../src/game/keybindUtils";
 import { calculateStats } from "../src/game/scoring";
 import type { Bindings, PracticeResult } from "../src/types";
 
@@ -34,6 +34,14 @@ describe("keybind normalization", () => {
     expect(wheelEventToBind(new WheelEvent("wheel", init))).toBe(expected);
   });
 
+  it.each([
+    [{ button: 1 }, "MiddleClick"],
+    [{ button: 1, ctrlKey: true }, "Ctrl+MiddleClick"],
+    [{ button: 1, altKey: true, shiftKey: true }, "Alt+Shift+MiddleClick"],
+  ])("normalizes middle-click input %o as %s", (init, expected) => {
+    expect(mouseEventToBind(new MouseEvent("mousedown", init))).toBe(expected);
+  });
+
   it("finds every duplicated bind", () => {
     const duplicates = getDuplicateBindings({ a: "Shift+1", b: "Ctrl+2", c: "Shift+1", d: "Ctrl+2" });
     expect([...duplicates].sort()).toEqual(["Ctrl+2", "Shift+1"]);
@@ -42,9 +50,9 @@ describe("keybind normalization", () => {
 
 describe("generic challenge generation", () => {
   const bindings: Bindings = {
-    [bindingKey("polymorph", 1)]: "Shift+1",
-    [bindingKey("polymorph", 2)]: "Shift+2",
-    [bindingKey("counterspell", 3)]: "Ctrl+3",
+    [bindingKey("polymorph", "arena1")]: "Shift+1",
+    [bindingKey("polymorph", "arena2")]: "Shift+2",
+    [bindingKey("counterspell", "arena3")]: "Ctrl+3",
   };
 
   it("only uses configured spell/target pairs", () => {
@@ -56,10 +64,11 @@ describe("generic challenge generation", () => {
     const challenge = generateChallenge(
       mage,
       bindings,
-      { spellId: "polymorph", target: 1 },
+      undefined,
+      { spellId: "polymorph", target: "arena1" },
       2,
     );
-    expect(`${challenge.spellId}:${challenge.target}`).not.toBe("polymorph:1");
+    expect(`${challenge.spellId}:${challenge.target}`).not.toBe("polymorph:arena1");
     vi.restoreAllMocks();
   });
 });
@@ -67,7 +76,7 @@ describe("generic challenge generation", () => {
 describe("session scoring", () => {
   it("counts outcomes, streaks, accuracy, reaction time, and score", () => {
     const result = (kind: PracticeResult["kind"], reactionMs: number | null): PracticeResult => ({
-      challenge: { spellId: "polymorph", target: 1 },
+      challenge: { spellId: "polymorph", target: "arena1", targetMode: "arena" },
       kind,
       reactionMs,
       pressedBind: kind === "missed" ? null : "Shift+1",

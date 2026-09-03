@@ -19,11 +19,19 @@ function capture(testId: string, init: KeyboardEventInit) {
 function captureWheel(testId: string, init: WheelEventInit): WheelEvent {
   fireEvent.click(screen.getByTestId(testId));
   const event = new WheelEvent("wheel", { ...init, bubbles: true, cancelable: true });
-  fireEvent(window, event);
+  fireEvent(screen.getByRole("dialog", { name: "Capturing keybind" }), event);
+  return event;
+}
+
+function captureMiddleClick(testId: string, init: MouseEventInit = {}): MouseEvent {
+  fireEvent.click(screen.getByTestId(testId));
+  const event = new MouseEvent("mousedown", { ...init, button: 1, bubbles: true, cancelable: true });
+  fireEvent(screen.getByRole("dialog", { name: "Capturing keybind" }), event);
   return event;
 }
 
 function suggestedEvent(spell: string, target: number): KeyboardEventInit {
+  if (spell === "Frostbolt (Rank 1)") return { key: String(target) };
   if (spell === "Polymorph") return { key: String(target), shiftKey: true };
   if (spell === "Counterspell") return { key: String(target), ctrlKey: true };
   if (spell === "Deep Freeze") return { key: String(target), altKey: true };
@@ -74,8 +82,62 @@ describe("complete app flow", () => {
       bubbles: true,
       cancelable: true,
     });
-    fireEvent(window, practiceEvent);
+    fireEvent(document.querySelector(".practice-screen")!, practiceEvent);
     expect(practiceEvent.defaultPrevented).toBe(true);
+    expect(screen.getByTestId("feedback-copy").textContent).toBe("CORRECT");
+  });
+
+  it("captures the wheel button with modifiers and recognizes it during practice", () => {
+    render(<App />);
+    chooseMage();
+
+    const captureEvent = captureMiddleClick("bind-polymorph-2", { ctrlKey: true, altKey: true });
+    expect(captureEvent.defaultPrevented).toBe(true);
+    expect(screen.getByTestId("bind-polymorph-2").textContent).toContain("Ctrl+Alt+MiddleClick");
+    fireEvent.click(screen.getByTestId("start-practice"));
+
+    const practiceEvent = new MouseEvent("mousedown", {
+      button: 1,
+      ctrlKey: true,
+      altKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    fireEvent(document.querySelector(".practice-screen")!, practiceEvent);
+    expect(practiceEvent.defaultPrevented).toBe(true);
+    expect(screen.getByTestId("feedback-copy").textContent).toBe("CORRECT");
+  });
+
+  it("keeps spells loaded while allowing the practice pool to be toggled", () => {
+    const view = render(<App />);
+    chooseMage();
+
+    expect(screen.getByTestId("toggle-frostbolt-rank-1").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("toggle-spellsteal").getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(screen.getByTestId("toggle-spellsteal"));
+    expect(screen.getByTestId("toggle-spellsteal").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText("5/12 abilities enabled")).not.toBeNull();
+
+    view.unmount();
+    render(<App />);
+    expect(screen.getByTestId("toggle-spellsteal").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("supports optional ally-target Remove Curse drills", () => {
+    render(<App />);
+    chooseMage();
+    fireEvent.click(screen.getByRole("button", { name: "Use suggested" }));
+    ["frostbolt-rank-1", "polymorph", "counterspell", "deep-freeze"].forEach((spellId) => {
+      fireEvent.click(screen.getByTestId(`toggle-${spellId}`));
+    });
+    fireEvent.click(screen.getByTestId("toggle-remove-curse"));
+    fireEvent.click(screen.getByTestId("start-practice"));
+
+    expect(screen.getByRole("region", { name: "Friendly party frames" })).not.toBeNull();
+    expect(screen.getByTestId("active-ally-challenge-icon")).not.toBeNull();
+    const calloutTarget = document.querySelector(".challenge-callout b")?.textContent;
+    const functionKey = calloutTarget === "SELF" ? "F1" : calloutTarget === "PARTY 1" ? "F2" : "F3";
+    fireEvent.keyDown(window, { key: functionKey, altKey: true });
     expect(screen.getByTestId("feedback-copy").textContent).toBe("CORRECT");
   });
 

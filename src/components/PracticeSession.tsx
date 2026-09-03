@@ -1,17 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DIFFICULTIES, FEEDBACK_DELAY_MS } from "../config";
-import { createOpponentTeam } from "../data/opponents";
+import { createAllyTeam, createOpponentTeam } from "../data/opponents";
 import { generateChallenge } from "../game/challengeGenerator";
-import { bindingKey, keyboardEventToBind, wheelEventToBind } from "../game/keybindUtils";
+import { bindingKey, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../game/keybindUtils";
 import { calculateStats } from "../game/scoring";
+import { getArenaTargetNumber, getTargetDefinition } from "../game/targets";
 import type { Bindings, Challenge, ClassDefinition, PracticeResult, PracticeSettings, ResultKind } from "../types";
 import { GladiusPanel } from "./GladiusPanel";
+import { PartyPanel } from "./PartyPanel";
 import { PracticeHUD } from "./PracticeHUD";
 import { SessionResults } from "./SessionResults";
 
 interface PracticeSessionProps {
   classDefinition: ClassDefinition;
   bindings: Bindings;
+  enabledSpellIds: string[];
   settings: PracticeSettings;
   onChangeBinds: () => void;
   onChangeClass: () => void;
@@ -25,14 +28,16 @@ interface FeedbackState {
 export function PracticeSession({
   classDefinition,
   bindings,
+  enabledSpellIds,
   settings,
   onChangeBinds,
   onChangeClass,
 }: PracticeSessionProps) {
   const reactionWindowMs = DIFFICULTIES[settings.difficulty].windowMs;
   const [opponents, setOpponents] = useState(createOpponentTeam);
+  const [allies, setAllies] = useState(createAllyTeam);
   const [challenge, setChallenge] = useState<Challenge>(() =>
-    generateChallenge(classDefinition, bindings, null, Date.now()),
+    generateChallenge(classDefinition, bindings, enabledSpellIds, null, Date.now()),
   );
   const [results, setResults] = useState<PracticeResult[]>([]);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -40,6 +45,7 @@ export function PracticeSession({
   const [finished, setFinished] = useState(false);
   const [remainingMs, setRemainingMs] = useState(reactionWindowMs);
   const settledRef = useRef(false);
+  const practiceSurfaceRef = useRef<HTMLElement>(null);
 
   const stats = useMemo(() => calculateStats(results, reactionWindowMs), [results, reactionWindowMs]);
   const activeSpell = classDefinition.spells.find((spell) => spell.id === challenge?.spellId) ?? null;
@@ -60,7 +66,7 @@ export function PracticeSession({
     setResults((previous) => [
       ...previous,
       {
-        challenge: { spellId: challenge.spellId, target: challenge.target },
+        challenge: { spellId: challenge.spellId, target: challenge.target, targetMode: challenge.targetMode },
         kind: finalKind,
         reactionMs: finalKind === "missed" ? null : elapsed,
         pressedBind,
@@ -100,7 +106,7 @@ export function PracticeSession({
         return;
       }
 
-      const next = generateChallenge(classDefinition, bindings, challenge, challenge.id + 1);
+      const next = generateChallenge(classDefinition, bindings, enabledSpellIds, challenge, challenge.id + 1);
       settledRef.current = false;
       setChallenge(next);
       setRemainingMs(reactionWindowMs);
@@ -108,7 +114,7 @@ export function PracticeSession({
     }, delay);
 
     return () => window.clearTimeout(transition);
-  }, [bindings, challenge, classDefinition, feedback, reactionWindowMs, results.length, settings.sessionLength]);
+  }, [bindings, challenge, classDefinition, enabledSpellIds, feedback, reactionWindowMs, results.length, settings.sessionLength]);
 
   const togglePause = useCallback(() => {
     if (!challenge || feedback || finished) return;
@@ -127,8 +133,10 @@ export function PracticeSession({
     }
   }, [challenge, feedback, finished, paused]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (finished) return;
+    const practiceSurface = practiceSurfaceRef.current;
+    if (!practiceSurface) return;
 
     const handlePracticeKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -158,25 +166,44 @@ export function PracticeSession({
       if (pressedBind) settleChallenge("incorrect", pressedBind);
     };
 
+    const handlePracticeMouse = (event: MouseEvent) => {
+      const pressedBind = mouseEventToBind(event);
+      if (!pressedBind) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      if (paused || feedback || !challenge) return;
+      settleChallenge("incorrect", pressedBind);
+    };
+
+    const preventMiddleAuxClick = (event: MouseEvent) => {
+      if (event.button === 1) event.preventDefault();
+    };
+
     window.addEventListener("keydown", handlePracticeKey, true);
-    window.addEventListener("wheel", handlePracticeWheel, { capture: true, passive: false });
+    practiceSurface.addEventListener("wheel", handlePracticeWheel, { capture: true, passive: false });
+    practiceSurface.addEventListener("mousedown", handlePracticeMouse, true);
+    practiceSurface.addEventListener("auxclick", preventMiddleAuxClick, true);
     return () => {
       window.removeEventListener("keydown", handlePracticeKey, true);
-      window.removeEventListener("wheel", handlePracticeWheel, true);
+      practiceSurface.removeEventListener("wheel", handlePracticeWheel, true);
+      practiceSurface.removeEventListener("mousedown", handlePracticeMouse, true);
+      practiceSurface.removeEventListener("auxclick", preventMiddleAuxClick, true);
     };
   }, [challenge, feedback, finished, paused, settleChallenge, togglePause]);
 
   const restart = useCallback(() => {
-    const next = generateChallenge(classDefinition, bindings, null, Date.now());
+    const next = generateChallenge(classDefinition, bindings, enabledSpellIds, null, Date.now());
     settledRef.current = false;
     setOpponents(createOpponentTeam());
+    setAllies(createAllyTeam());
     setResults([]);
     setFeedback(null);
     setPaused(false);
     setFinished(false);
     setRemainingMs(reactionWindowMs);
     setChallenge(next);
-  }, [bindings, classDefinition, reactionWindowMs]);
+  }, [bindings, classDefinition, enabledSpellIds, reactionWindowMs]);
 
   if (finished) {
     return (
@@ -197,9 +224,15 @@ export function PracticeSession({
       : feedback?.kind === "missed"
         ? `MISSED · EXPECTED ${feedback.expectedBind}`
         : null;
+  const targetDefinition = getTargetDefinition(challenge.target);
+  const arenaTarget = challenge.targetMode === "arena" ? getArenaTargetNumber(challenge.target) : null;
+  const allyTarget = challenge.targetMode === "ally" ? challenge.target : null;
+  const hasAllyTraining = classDefinition.spells.some(
+    (spell) => spell.targetMode === "ally" && enabledSpellIds.includes(spell.id),
+  );
 
   return (
-    <main className="practice-screen">
+    <main className="practice-screen" ref={practiceSurfaceRef}>
       <PracticeHUD
         stats={stats}
         currentRound={Math.min(results.length + (feedback ? 0 : 1), settings.sessionLength)}
@@ -220,17 +253,27 @@ export function PracticeSession({
               <span>CAST</span>
               <strong>{activeSpell?.name}</strong>
               <i>ON</i>
-              <b>ARENA {challenge.target}</b>
+              <b>{targetDefinition.label.toUpperCase()}</b>
             </>
           )}
         </div>
 
-        <GladiusPanel
-          opponents={opponents}
-          target={challenge.target}
-          spell={activeSpell}
-          feedback={feedback?.kind ?? null}
-        />
+        <div className={`combat-panels ${hasAllyTraining ? "has-party-panel" : ""}`}>
+          <GladiusPanel
+            opponents={opponents}
+            target={arenaTarget}
+            spell={challenge.targetMode === "arena" ? activeSpell : null}
+            feedback={feedback?.kind ?? null}
+          />
+          {hasAllyTraining && (
+            <PartyPanel
+              allies={allies}
+              target={allyTarget}
+              spell={challenge.targetMode === "ally" ? activeSpell : null}
+              feedback={feedback?.kind ?? null}
+            />
+          )}
+        </div>
 
         <p className="practice-hint">Press the configured spell + target bind. No clicking required.</p>
       </div>

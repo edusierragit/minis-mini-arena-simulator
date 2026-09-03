@@ -1,14 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DIFFICULTIES, SESSION_LENGTHS } from "../config";
-import { bindingKey, getDuplicateBindings, keyboardEventToBind, wheelEventToBind } from "../game/keybindUtils";
-import type { ArenaTarget, Bindings, ClassDefinition, PracticeSettings } from "../types";
+import { bindingKey, getDuplicateBindings, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../game/keybindUtils";
+import { getTargetDefinition, getTargetsForMode } from "../game/targets";
+import type { Bindings, ClassDefinition, PracticeSettings, TargetId } from "../types";
 import { assetUrl } from "../utils/assets";
 
 interface KeybindConfiguratorProps {
   classDefinition: ClassDefinition;
   bindings: Bindings;
+  enabledSpellIds: string[];
   settings: PracticeSettings;
   onBindingsChange: (bindings: Bindings) => void;
+  onEnabledSpellsChange: (spellIds: string[]) => void;
   onSettingsChange: (settings: PracticeSettings) => void;
   onBack: () => void;
   onStart: () => void;
@@ -16,28 +19,44 @@ interface KeybindConfiguratorProps {
 
 interface CapturingBind {
   spellId: string;
-  target: ArenaTarget;
+  target: TargetId;
 }
 
 export function KeybindConfigurator({
   classDefinition,
   bindings,
+  enabledSpellIds,
   settings,
   onBindingsChange,
+  onEnabledSpellsChange,
   onSettingsChange,
   onBack,
   onStart,
 }: KeybindConfiguratorProps) {
   const [capturing, setCapturing] = useState<CapturingBind | null>(null);
+  const captureSurfaceRef = useRef<HTMLDivElement>(null);
+  const enabledSet = useMemo(() => new Set(enabledSpellIds), [enabledSpellIds]);
   const duplicates = useMemo(() => getDuplicateBindings(bindings), [bindings]);
+  const activeBindings = useMemo(
+    () => Object.fromEntries(Object.entries(bindings).filter(([key]) => enabledSet.has(key.split(":")[0]))),
+    [bindings, enabledSet],
+  );
+  const activeDuplicates = useMemo(() => getDuplicateBindings(activeBindings), [activeBindings]);
   const totalBinds = classDefinition.spells.length * 3;
   const configuredCount = classDefinition.spells.reduce(
-    (count, spell) => count + ([1, 2, 3] as ArenaTarget[]).filter((target) => bindings[bindingKey(spell.id, target)]).length,
+    (count, spell) => count + getTargetsForMode(spell.targetMode).filter((target) => bindings[bindingKey(spell.id, target.id)]).length,
+    0,
+  );
+  const activeConfiguredCount = classDefinition.spells.reduce(
+    (count, spell) => count + (enabledSet.has(spell.id)
+      ? getTargetsForMode(spell.targetMode).filter((target) => bindings[bindingKey(spell.id, target.id)]).length
+      : 0),
     0,
   );
 
-  useEffect(() => {
-    if (!capturing) return;
+  useLayoutEffect(() => {
+    const captureSurface = captureSurfaceRef.current;
+    if (!capturing || !captureSurface) return;
 
     const commitBind = (capturedBind: string) => {
       onBindingsChange({
@@ -69,15 +88,25 @@ export function KeybindConfigurator({
       if (capturedBind) commitBind(capturedBind);
     };
 
+    const captureMouse = (event: MouseEvent) => {
+      const capturedBind = mouseEventToBind(event);
+      if (!capturedBind) return;
+      event.preventDefault();
+      event.stopPropagation();
+      commitBind(capturedBind);
+    };
+
     window.addEventListener("keydown", captureKey, true);
-    window.addEventListener("wheel", captureWheel, { capture: true, passive: false });
+    captureSurface.addEventListener("wheel", captureWheel, { capture: true, passive: false });
+    captureSurface.addEventListener("mousedown", captureMouse, true);
     return () => {
       window.removeEventListener("keydown", captureKey, true);
-      window.removeEventListener("wheel", captureWheel, true);
+      captureSurface.removeEventListener("wheel", captureWheel, true);
+      captureSurface.removeEventListener("mousedown", captureMouse, true);
     };
   }, [bindings, capturing, onBindingsChange]);
 
-  const clearBind = (spellId: string, target: ArenaTarget) => {
+  const clearBind = (spellId: string, target: TargetId) => {
     const updated = { ...bindings };
     delete updated[bindingKey(spellId, target)];
     onBindingsChange(updated);
@@ -87,12 +116,20 @@ export function KeybindConfigurator({
   const applySuggested = () => {
     const suggested: Bindings = {};
     classDefinition.spells.forEach((spell) => {
-      ([1, 2, 3] as ArenaTarget[]).forEach((target) => {
-        const bind = spell.suggestedBindings?.[target];
-        if (bind) suggested[bindingKey(spell.id, target)] = bind;
+      getTargetsForMode(spell.targetMode).forEach((target) => {
+        const bind = spell.suggestedBindings?.[target.id];
+        if (bind) suggested[bindingKey(spell.id, target.id)] = bind;
       });
     });
     onBindingsChange(suggested);
+  };
+
+  const toggleSpell = (spellId: string) => {
+    onEnabledSpellsChange(
+      enabledSet.has(spellId)
+        ? enabledSpellIds.filter((id) => id !== spellId)
+        : [...enabledSpellIds, spellId],
+    );
   };
 
   const resetBinds = () => {
@@ -118,8 +155,8 @@ export function KeybindConfigurator({
 
       <section className="config-intro panel-inset">
         <div>
-          <strong>Click a slot, then press keys or move the mouse wheel.</strong>
-          <span>WheelUp / WheelDown and modifiers are supported. Escape cancels capture.</span>
+          <strong>Click a slot, then press keys, scroll or click the mouse wheel.</strong>
+          <span>WheelUp, WheelDown, MiddleClick and Ctrl / Alt / Shift are supported.</span>
         </div>
         <div className="config-actions">
           <button type="button" className="small-button" onClick={applySuggested}>Use suggested</button>
@@ -128,52 +165,66 @@ export function KeybindConfigurator({
       </section>
 
       <section className="bind-list" aria-label={`${classDefinition.name} ability bindings`}>
-        {classDefinition.spells.map((spell) => (
-          <article className="spell-row" key={spell.id}>
-            <div className="spell-identity">
-              <img className="wow-icon spell-icon" src={assetUrl(spell.icon)} alt="" />
-              <div>
-                <h2>{spell.name}</h2>
-                <p>{spell.description}</p>
+        {classDefinition.spells.map((spell) => {
+          const isEnabled = enabledSet.has(spell.id);
+          return (
+            <article className={`spell-row ${isEnabled ? "is-enabled" : "is-disabled"}`} key={spell.id}>
+              <div className="spell-identity">
+                <img className="wow-icon spell-icon" src={assetUrl(spell.icon)} alt="" />
+                <div className="spell-copy">
+                  <div className="spell-title-line">
+                    <h2>{spell.name}</h2>
+                    <span className={`target-mode-chip mode-${spell.targetMode}`}>{spell.targetMode === "arena" ? "ENEMY" : "ALLY · LEVEL 2"}</span>
+                  </div>
+                  <p>{spell.description}</p>
+                  <button
+                    type="button"
+                    className={`spell-toggle ${isEnabled ? "is-on" : ""}`}
+                    onClick={() => toggleSpell(spell.id)}
+                    aria-pressed={isEnabled}
+                    aria-label={`${isEnabled ? "Disable" : "Enable"} ${spell.name} in practice`}
+                    data-testid={`toggle-${spell.id}`}
+                  ><i />{isEnabled ? "Enabled" : "Disabled"}</button>
+                </div>
               </div>
-            </div>
 
-            <div className="arena-bindings">
-              {([1, 2, 3] as ArenaTarget[]).map((target) => {
-                const key = bindingKey(spell.id, target);
-                const value = bindings[key] ?? "";
-                const isCapturing = capturing?.spellId === spell.id && capturing.target === target;
-                const isDuplicate = Boolean(value && duplicates.has(value));
+              <div className="arena-bindings">
+                {getTargetsForMode(spell.targetMode).map((target) => {
+                  const key = bindingKey(spell.id, target.id);
+                  const value = bindings[key] ?? "";
+                  const isCapturing = capturing?.spellId === spell.id && capturing.target === target.id;
+                  const isDuplicate = Boolean(value && duplicates.has(value));
 
-                return (
-                  <div className={`bind-control ${isDuplicate ? "has-duplicate" : ""}`} key={target}>
-                    <label>Arena {target}</label>
-                    <div className="bind-input-group">
-                      <button
-                        type="button"
-                        className={`bind-input ${isCapturing ? "is-capturing" : ""}`}
-                        onClick={() => setCapturing({ spellId: spell.id, target })}
-                        data-testid={`bind-${spell.id}-${target}`}
-                        aria-label={`${spell.name} Arena ${target} bind${value ? `: ${value}` : ""}`}
-                      >
-                        {isCapturing ? <span>Press keys…</span> : value || <em>Not set</em>}
-                      </button>
-                      {value && (
+                  return (
+                    <div className={`bind-control ${isDuplicate ? "has-duplicate" : ""}`} key={target.id}>
+                      <label>{target.compactLabel}</label>
+                      <div className="bind-input-group">
                         <button
                           type="button"
-                          className="clear-bind"
-                          aria-label={`Clear ${spell.name} Arena ${target}`}
-                          onClick={() => clearBind(spell.id, target)}
-                        >×</button>
-                      )}
+                          className={`bind-input ${isCapturing ? "is-capturing" : ""}`}
+                          onClick={() => setCapturing({ spellId: spell.id, target: target.id })}
+                          data-testid={`bind-${spell.id}-${target.position}`}
+                          aria-label={`${spell.name} ${target.label} bind${value ? `: ${value}` : ""}`}
+                        >
+                          {isCapturing ? <span>Press keys…</span> : value || <em>Not set</em>}
+                        </button>
+                        {value && (
+                          <button
+                            type="button"
+                            className="clear-bind"
+                            aria-label={`Clear ${spell.name} ${target.label}`}
+                            onClick={() => clearBind(spell.id, target.id)}
+                          >×</button>
+                        )}
+                      </div>
+                      {isDuplicate && <small className="duplicate-note">Duplicate bind</small>}
                     </div>
-                    {isDuplicate && <small className="duplicate-note">Duplicate bind</small>}
-                  </div>
-                );
-              })}
-            </div>
-          </article>
-        ))}
+                  );
+                })}
+              </div>
+            </article>
+          );
+        })}
       </section>
 
       <section className="practice-options panel-inset">
@@ -210,16 +261,27 @@ export function KeybindConfigurator({
       <footer className="config-footer">
         <div className="bind-status">
           <strong>{configuredCount}/{totalBinds}</strong> binds configured
-          {duplicates.size > 0 && <span>Resolve duplicate binds to start.</span>}
+          <small>{enabledSpellIds.length}/{classDefinition.spells.length} abilities enabled</small>
+          {activeDuplicates.size > 0 && <span>Resolve duplicate binds in enabled abilities to start.</span>}
+          {enabledSpellIds.length > 0 && activeConfiguredCount === 0 && <span>Configure at least one enabled ability bind.</span>}
         </div>
         <button
           type="button"
           className="primary-button"
           onClick={onStart}
-          disabled={configuredCount === 0 || duplicates.size > 0}
+          disabled={enabledSpellIds.length === 0 || activeConfiguredCount === 0 || activeDuplicates.size > 0}
           data-testid="start-practice"
         >Start Practice <span>→</span></button>
       </footer>
+      {capturing && (
+        <div className="bind-capture-surface" ref={captureSurfaceRef} role="dialog" aria-modal="true" aria-label="Capturing keybind">
+          <div className="capture-toast">
+            <span>CAPTURING</span>
+            <strong>{classDefinition.spells.find((spell) => spell.id === capturing.spellId)?.name}</strong>
+            <small>{getTargetDefinition(capturing.target).label} · Press keys, scroll, or MiddleClick · Esc cancels</small>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

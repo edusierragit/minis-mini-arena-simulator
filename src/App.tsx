@@ -13,15 +13,20 @@ export default function App() {
   const initialClass = initial.selectedClassId ? getClassDefinition(initial.selectedClassId) : undefined;
   const [selectedClassId, setSelectedClassId] = useState<string | null>(initialClass?.playable ? initialClass.id : null);
   const [bindingsByClass, setBindingsByClass] = useState<Record<string, Bindings>>(initial.bindingsByClass);
+  const [enabledSpellsByClass, setEnabledSpellsByClass] = useState<Record<string, string[]>>(initial.enabledSpellsByClass);
   const [settings, setSettings] = useState<PracticeSettings>(initial.settings);
   const [screen, setScreen] = useState<Screen>(initialClass?.playable ? "bindings" : "classes");
 
   const selectedClass = selectedClassId ? getClassDefinition(selectedClassId) : undefined;
   const bindings = selectedClassId ? bindingsByClass[selectedClassId] ?? {} : {};
+  const enabledSpellIds = selectedClassId && selectedClass
+    ? enabledSpellsByClass[selectedClassId]
+      ?? selectedClass.spells.filter((spell) => spell.enabledByDefault !== false).map((spell) => spell.id)
+    : [];
 
   useEffect(() => {
-    saveAppState({ selectedClassId, bindingsByClass, settings });
-  }, [bindingsByClass, selectedClassId, settings]);
+    saveAppState({ selectedClassId, bindingsByClass, enabledSpellsByClass, settings });
+  }, [bindingsByClass, enabledSpellsByClass, selectedClassId, settings]);
 
   const selectClass = (classId: string) => {
     const classDefinition = getClassDefinition(classId);
@@ -49,6 +54,7 @@ export default function App() {
       <PracticeSession
         classDefinition={selectedClass}
         bindings={bindings}
+        enabledSpellIds={enabledSpellIds}
         settings={settings}
         onChangeBinds={() => setScreen("bindings")}
         onChangeClass={changeClass}
@@ -60,8 +66,13 @@ export default function App() {
     <KeybindConfigurator
       classDefinition={selectedClass}
       bindings={bindings}
+      enabledSpellIds={enabledSpellIds}
       settings={settings}
       onBindingsChange={changeBindings}
+      onEnabledSpellsChange={(spellIds) => {
+        if (!selectedClassId) return;
+        setEnabledSpellsByClass((current) => ({ ...current, [selectedClassId]: spellIds }));
+      }}
       onSettingsChange={setSettings}
       onBack={changeClass}
       onStart={() => setScreen("practice")}

@@ -1,12 +1,15 @@
 export type ArenaTarget = 1 | 2 | 3;
+export type TargetMode = "arena" | "ally";
+export type TargetId = "arena1" | "arena2" | "arena3" | "player" | "party1" | "party2";
 
 export interface SpellDefinition {
   id: string;
   name: string;
   icon: string;
-  targetMode: "arena";
+  targetMode: TargetMode;
   description?: string;
-  suggestedBindings?: Partial<Record<ArenaTarget, string>>;
+  suggestedBindings?: Partial<Record<TargetId, string>>;
+  enabledByDefault?: boolean;
 }
 
 export interface ClassDefinition {
@@ -18,13 +21,14 @@ export interface ClassDefinition {
   spells: SpellDefinition[];
 }
 
-export type BindingKey = `${string}:arena${ArenaTarget}`;
+export type BindingKey = `${string}:${TargetId}`;
 export type Bindings = Record<string, string>;
 
 export interface Challenge {
   id: number;
   spellId: string;
-  target: ArenaTarget;
+  target: TargetId;
+  targetMode: TargetMode;
   startedAt: number;
   elapsedMs: number;
 }
@@ -32,7 +36,7 @@ export interface Challenge {
 export type ResultKind = "correct" | "incorrect" | "missed";
 
 export interface PracticeResult {
-  challenge: Pick<Challenge, "spellId" | "target">;
+  challenge: Pick<Challenge, "spellId" | "target" | "targetMode">;
   kind: ResultKind;
   reactionMs: number | null;
   pressedBind: string | null;

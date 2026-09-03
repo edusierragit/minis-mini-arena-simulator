@@ -1,3 +1,5 @@
+import type { TargetId } from "../types";
+
 const MODIFIER_KEYS = new Set(["Control", "Alt", "Shift", "Meta"]);
 
 const KEY_ALIASES: Record<string, string> = {
@@ -43,8 +45,20 @@ export function wheelEventToBind(event: WheelEvent): string | null {
   return parts.join("+");
 }
 
-export function bindingKey(spellId: string, target: 1 | 2 | 3): string {
-  return `${spellId}:arena${target}`;
+/** Normalize the wheel-button click. Mouse button 1 is the physical middle button. */
+export function mouseEventToBind(event: MouseEvent): string | null {
+  if (event.button !== 1 || event.metaKey) return null;
+
+  const parts: string[] = [];
+  if (event.ctrlKey) parts.push("Ctrl");
+  if (event.altKey) parts.push("Alt");
+  if (event.shiftKey) parts.push("Shift");
+  parts.push("MiddleClick");
+  return parts.join("+");
+}
+
+export function bindingKey(spellId: string, target: TargetId): string {
+  return `${spellId}:${target}`;
 }
 
 export function getDuplicateBindings(bindings: Record<string, string>): Set<string> {

@@ -6,12 +6,14 @@ const STORAGE_KEY = "minis-mini-arena-simulator:v1";
 interface StoredState {
   selectedClassId: string | null;
   bindingsByClass: Record<string, Bindings>;
+  enabledSpellsByClass: Record<string, string[]>;
   settings: PracticeSettings;
 }
 
 const initialState: StoredState = {
   selectedClassId: null,
   bindingsByClass: {},
+  enabledSpellsByClass: {},
   settings: DEFAULT_SETTINGS,
 };
 
@@ -23,6 +25,7 @@ export function loadAppState(): StoredState {
     return {
       selectedClassId: typeof parsed.selectedClassId === "string" ? parsed.selectedClassId : null,
       bindingsByClass: parsed.bindingsByClass ?? {},
+      enabledSpellsByClass: parsed.enabledSpellsByClass ?? {},
       settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
     };
   } catch {
