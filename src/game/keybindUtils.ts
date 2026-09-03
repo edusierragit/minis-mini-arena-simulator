@@ -45,18 +45,17 @@ export function wheelEventToBind(event: WheelEvent): string | null {
   return parts.join("+");
 }
 
-const BINDABLE_MOUSE_BUTTONS: Record<number, string> = {
-  1: "MiddleClick",
-  3: "Mouse4",
-  4: "Mouse5",
-  5: "Mouse6",
-  6: "Mouse7",
-  7: "Mouse8",
-};
+const MAX_MOUSE_BUTTON = 20;
+
+function getBindableMouseButton(button: number): string | null {
+  if (button === 1) return "MiddleClick";
+  if (Number.isInteger(button) && button >= 3 && button < MAX_MOUSE_BUTTON) return `Mouse${button + 1}`;
+  return null;
+}
 
 /** Normalize middle and extra mouse buttons using the same names during capture and play. */
 export function mouseEventToBind(event: MouseEvent): string | null {
-  const mouseButton = BINDABLE_MOUSE_BUTTONS[event.button];
+  const mouseButton = getBindableMouseButton(event.button);
   if (!mouseButton || event.metaKey) return null;
 
   const parts: string[] = [];

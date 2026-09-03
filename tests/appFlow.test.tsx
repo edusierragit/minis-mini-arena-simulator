@@ -66,6 +66,9 @@ describe("complete app flow", () => {
       expect((screen.getByTestId(`${classId}-class-card`) as HTMLButtonElement).disabled).toBe(false);
     });
     expect((screen.getByTestId("warrior-class-card") as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("link", { name: "Eduardo Sierra" }).getAttribute("href")).toBe(
+      "https://x.com/eduardo39657119",
+    );
   });
 
   it("loads Rogue's arena training pool and suggested binds", () => {

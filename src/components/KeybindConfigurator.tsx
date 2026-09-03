@@ -187,7 +187,7 @@ export function KeybindConfigurator({
       <section className="config-intro panel-inset">
         <div>
           <strong>Click a slot, then press keys, scroll or use a mouse button.</strong>
-          <span>WheelUp/Down, MiddleClick, Mouse4–Mouse8 and Ctrl / Alt / Shift are supported.</span>
+          <span>WheelUp/Down, MiddleClick, Mouse4+ and Ctrl / Alt / Shift are supported.</span>
         </div>
         <div className="config-actions">
           <button type="button" className="small-button" onClick={applySuggested}>Use suggested</button>

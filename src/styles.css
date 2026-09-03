@@ -103,6 +103,10 @@ button:focus-visible { outline: 2px solid #d3c2ff; outline-offset: 2px; }
 }
 .class-card.is-locked { opacity: 0.5; filter: saturate(0.45); }
 .keyboard-note { margin: 28px auto 0; color: #645e6b; font-size: 11px; letter-spacing: 0.04em; }
+.creator-credit { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 12px auto 0; color: #514a59; font-size: 9px; }
+.creator-credit i { font-style: normal; }
+.creator-credit a { color: #776c82; text-decoration: none; }
+.creator-credit a:hover { color: #bca8d0; }
 
 .screen-header { display: grid; grid-template-columns: 130px 1fr 130px; align-items: center; margin-bottom: 28px; }
 .screen-header > div:nth-child(2) { text-align: center; }

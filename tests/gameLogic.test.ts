@@ -46,6 +46,8 @@ describe("keybind normalization", () => {
     [{ button: 4, ctrlKey: true }, "Ctrl+Mouse5"],
     [{ button: 5, altKey: true, shiftKey: true }, "Alt+Shift+Mouse6"],
     [{ button: 7, ctrlKey: true, altKey: true, shiftKey: true }, "Ctrl+Alt+Shift+Mouse8"],
+    [{ button: 11 }, "Mouse12"],
+    [{ button: 19, ctrlKey: true }, "Ctrl+Mouse20"],
   ])("normalizes bindable mouse input %o as %s", (init, expected) => {
     expect(mouseEventToBind(new MouseEvent("mousedown", init))).toBe(expected);
   });
@@ -54,6 +56,7 @@ describe("keybind normalization", () => {
     expect(mouseEventToBind(new MouseEvent("mousedown", { button: 0 }))).toBeNull();
     expect(mouseEventToBind(new MouseEvent("mousedown", { button: 2 }))).toBeNull();
     expect(mouseEventToBind(new MouseEvent("mousedown", { button: 3, metaKey: true }))).toBeNull();
+    expect(mouseEventToBind(new MouseEvent("mousedown", { button: 20 }))).toBeNull();
   });
 
   it("finds every duplicated bind", () => {
