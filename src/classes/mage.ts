@@ -115,7 +115,7 @@ export const mage: ClassDefinition = {
       name: "Remove Curse",
       icon: "icons/mage/remove-curse.jpg",
       targetMode: "ally",
-      description: "Optional Level 2 drill for Self, Party 1 and Party 2.",
+      description: "Mage decurse for Hex and other Curse effects; optional ally drill.",
       suggestedBindings: { player: "Alt+F1", party1: "Alt+F2", party2: "Alt+F3" },
       enabledByDefault: false,
       dispels: ["curse"],

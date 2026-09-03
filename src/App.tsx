@@ -19,10 +19,16 @@ export default function App() {
 
   const selectedClass = selectedClassId ? getClassDefinition(selectedClassId) : undefined;
   const bindings = selectedClassId ? bindingsByClass[selectedClassId] ?? {} : {};
-  const enabledSpellIds = selectedClassId && selectedClass
-    ? enabledSpellsByClass[selectedClassId]
-      ?? selectedClass.spells.filter((spell) => spell.enabledByDefault !== false).map((spell) => spell.id)
-    : [];
+  const enabledSpellIds = useMemo(() => {
+    if (!selectedClassId || !selectedClass) return [];
+    const storedIds = enabledSpellsByClass[selectedClassId];
+    if (!storedIds) {
+      return selectedClass.spells.filter((spell) => spell.enabledByDefault !== false).map((spell) => spell.id);
+    }
+
+    const validIds = new Set(selectedClass.spells.map((spell) => spell.id));
+    return storedIds.filter((spellId) => validIds.has(spellId));
+  }, [enabledSpellsByClass, selectedClass, selectedClassId]);
 
   useEffect(() => {
     saveAppState({ selectedClassId, bindingsByClass, enabledSpellsByClass, settings });

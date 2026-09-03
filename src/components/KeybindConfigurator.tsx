@@ -177,6 +177,9 @@ export function KeybindConfigurator({
                     <span className={`target-mode-chip mode-${spell.targetMode}`}>{spell.targetMode === "arena" ? "ENEMY" : "ALLY · LEVEL 2"}</span>
                   </div>
                   <p>{spell.description}</p>
+                  {spell.dispels && (
+                    <span className="dispel-types">REMOVES {spell.dispels.join(" · ").toUpperCase()}</span>
+                  )}
                   <button
                     type="button"
                     className={`spell-toggle ${isEnabled ? "is-on" : ""}`}

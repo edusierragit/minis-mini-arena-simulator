@@ -3,10 +3,10 @@ import { druid } from "./druid";
 import { mage } from "./mage";
 import { paladin } from "./paladin";
 import { priest } from "./priest";
+import { rogue } from "./rogue";
 import { shaman } from "./shaman";
 
 const comingSoon = [
-  ["rogue", "Rogue", "#fff468"],
   ["warrior", "Warrior", "#c69b6d"],
   ["warlock", "Warlock", "#9482c9"],
   ["hunter", "Hunter", "#aad372"],
@@ -15,6 +15,7 @@ const comingSoon = [
 
 export const classDefinitions: ClassDefinition[] = [
   mage,
+  rogue,
   priest,
   paladin,
   druid,

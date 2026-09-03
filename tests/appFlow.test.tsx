@@ -52,13 +52,44 @@ describe("complete app flow", () => {
     vi.restoreAllMocks();
   });
 
-  it("offers Mage, Priest, Paladin, Druid, and Shaman as playable classes", () => {
+  it("offers Mage, Rogue, Priest, Paladin, Druid, and Shaman as playable classes", () => {
     render(<App />);
 
-    ["mage", "priest", "paladin", "druid", "shaman"].forEach((classId) => {
+    ["mage", "rogue", "priest", "paladin", "druid", "shaman"].forEach((classId) => {
       expect((screen.getByTestId(`${classId}-class-card`) as HTMLButtonElement).disabled).toBe(false);
     });
-    expect((screen.getByTestId("rogue-class-card") as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByTestId("warrior-class-card") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("loads Rogue's arena training pool and suggested binds", () => {
+    render(<App />);
+    fireEvent.click(screen.getByTestId("rogue-class-card"));
+
+    expect(screen.getByRole("heading", { name: "Rogue keybinds" })).not.toBeNull();
+    expect(screen.getByTestId("toggle-kick").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("toggle-dismantle").getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "Use suggested" }));
+    expect(screen.getByTestId("bind-kick-1").textContent).toContain("Ctrl+1");
+    expect(screen.getByTestId("bind-blind-2").textContent).toContain("Shift+2");
+    expect(screen.getByTestId("toggle-shadowstep").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("toggle-garrote").getAttribute("aria-pressed")).toBe("false");
+    expect((screen.getByTestId("start-practice") as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("never mixes another class's spells into Mage, even with contaminated saved state", () => {
+    localStorage.setItem("minis-mini-arena-simulator:v1", JSON.stringify({
+      selectedClassId: "mage",
+      bindingsByClass: {},
+      enabledSpellsByClass: { mage: ["polymorph", "cleanse", "kick", "hex"] },
+      settings: { difficulty: "normal", sessionLength: 30, muted: false },
+    }));
+
+    render(<App />);
+    const mageList = screen.getByRole("region", { name: "Mage ability bindings" });
+    expect(within(mageList).getByRole("heading", { name: "Polymorph" })).not.toBeNull();
+    expect(within(mageList).queryByRole("heading", { name: "Cleanse" })).toBeNull();
+    expect(within(mageList).queryByRole("heading", { name: "Kick" })).toBeNull();
+    expect(screen.getByText("1/12 abilities enabled")).not.toBeNull();
   });
 
   it("captures, replaces, clears, and warns about duplicate modifier binds", () => {
@@ -200,9 +231,10 @@ describe("complete app flow", () => {
     expect(screen.getByTestId("arena-frame-2")).not.toBeNull();
     expect(screen.getByTestId("arena-frame-3")).not.toBeNull();
     expect(screen.getByTestId("active-challenge-icon")).not.toBeNull();
+    expect(screen.queryByRole("region", { name: "Friendly party frames" })).toBeNull();
 
     fireEvent.keyDown(window, { key: "z" });
-    expect(screen.getByTestId("feedback-copy").textContent).toMatch(/WRONG · EXPECTED/);
+    expect(screen.getByTestId("feedback-copy").textContent).toMatch(/WRONG · USE/);
 
     await act(async () => vi.advanceTimersByTimeAsync(700));
     fireEvent.keyDown(window, { key: "Escape" });
@@ -212,7 +244,7 @@ describe("complete app flow", () => {
     fireEvent.keyDown(window, { key: "Escape" });
 
     await act(async () => vi.advanceTimersByTimeAsync(1500));
-    expect(screen.getByTestId("feedback-copy").textContent).toMatch(/MISSED · EXPECTED/);
+    expect(screen.getByTestId("feedback-copy").textContent).toMatch(/MISSED · USE/);
 
     fireEvent.click(screen.getByRole("button", { name: "Restart" }));
     const stats = screen.getByRole("region", { name: "Practice statistics" });

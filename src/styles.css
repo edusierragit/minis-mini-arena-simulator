@@ -171,6 +171,7 @@ button:focus-visible { outline: 2px solid #d3c2ff; outline-offset: 2px; }
 .spell-icon { width: 54px; height: 54px; flex: none; }
 .spell-identity h2 { margin: 0; font: 700 18px Georgia, serif; color: #f0ecf3; }
 .spell-identity p { margin: 4px 0 0; color: #77717e; font-size: 11px; line-height: 1.3; }
+.dispel-types { display: block; margin-top: 5px; color: #79a9cd; font-size: 7px; font-weight: 900; letter-spacing: 0.09em; }
 .spell-row.is-disabled .spell-icon,
 .spell-row.is-disabled .spell-title-line,
 .spell-row.is-disabled .arena-bindings { opacity: 0.56; }
@@ -342,7 +343,7 @@ kbd {
     radial-gradient(ellipse at center, rgba(69, 41, 85, 0.21), transparent 55%),
     linear-gradient(rgba(6,5,8,0.45), rgba(6,5,8,0.7));
 }
-.challenge-callout { display: flex; align-items: baseline; gap: 9px; min-height: 34px; margin-bottom: 12px; color: #817888; }
+.challenge-callout { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 9px; min-height: 34px; margin-bottom: 12px; color: #817888; text-align: center; }
 .challenge-callout span, .challenge-callout i { font-size: 9px; font-style: normal; font-weight: 800; letter-spacing: 0.15em; }
 .challenge-callout strong { color: #eee8f4; font: 700 21px Georgia, serif; }
 .challenge-callout b { color: #c5a4ff; font-size: 13px; letter-spacing: 0.08em; }

@@ -231,9 +231,9 @@ export function PracticeSession({
   const feedbackCopy = feedback?.kind === "correct"
     ? "CORRECT"
     : feedback?.kind === "incorrect"
-      ? `WRONG · EXPECTED ${feedback.expectedBind}`
+      ? `WRONG · USE ${activeSpell?.name.toUpperCase()} · ${feedback.expectedBind}`
       : feedback?.kind === "missed"
-        ? `MISSED · EXPECTED ${feedback.expectedBind}`
+        ? `MISSED · USE ${activeSpell?.name.toUpperCase()} · ${feedback.expectedBind}`
         : null;
   const targetDefinition = getTargetDefinition(challenge.target);
   const arenaTarget = challenge.targetMode === "arena" ? getArenaTargetNumber(challenge.target) : null;
