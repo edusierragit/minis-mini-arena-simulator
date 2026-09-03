@@ -4,7 +4,7 @@ A standalone, Gladius-inspired keyboard reaction trainer for practicing WoW aren
 
 Mage, Rogue, Priest, Paladin, Druid, and Shaman are playable. Keyboard keys, modifier combinations, WheelUp, WheelDown, MiddleClick, and extra mouse buttons Mouse4 through Mouse20 are supported when exposed by the browser or mouse driver. Abilities can be enabled or disabled individually; the default Mage pool is Frostbolt Rank 1, Deep Freeze, Counterspell, and Polymorph.
 
-Created by [Eduardo Sierra](https://x.com/eduardo39657119).
+Concept by **Minimalistic**. Built and maintained by [Eduardo Sierra](https://x.com/eduardo39657119).
 
 Ally-dispel drills show real WotLK debuff icons on Self, Party 1, or Party 2. Challenges respect dispel categories (Curse, Magic, Poison, and Disease), so a class is only asked to remove effects it can actually dispel. Bundled WotLK success/failure sounds can be muted from the practice HUD.
 

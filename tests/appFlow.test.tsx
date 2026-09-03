@@ -69,6 +69,7 @@ describe("complete app flow", () => {
     expect(screen.getByRole("link", { name: "Eduardo Sierra" }).getAttribute("href")).toBe(
       "https://x.com/eduardo39657119",
     );
+    expect(screen.getByText("Concept by Minimalistic")).not.toBeNull();
   });
 
   it("loads Rogue's arena training pool and suggested binds", () => {
