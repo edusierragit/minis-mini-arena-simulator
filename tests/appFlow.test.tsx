@@ -66,6 +66,7 @@ describe("complete app flow", () => {
       expect((screen.getByTestId(`${classId}-class-card`) as HTMLButtonElement).disabled).toBe(false);
     });
     expect((screen.getByTestId("warrior-class-card") as HTMLButtonElement).disabled).toBe(true);
+    expect(within(screen.getByTestId("death-knight-class-card")).getByText("COMING NEVER")).not.toBeNull();
     expect(screen.getByRole("link", { name: "Eduardo Sierra" }).getAttribute("href")).toBe(
       "https://x.com/eduardo39657119",
     );

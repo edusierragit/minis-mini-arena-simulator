@@ -19,6 +19,7 @@ export interface ClassDefinition {
   name: string;
   icon: string;
   playable: boolean;
+  availabilityLabel?: string;
   color: string;
   spells: SpellDefinition[];
 }

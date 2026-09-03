@@ -132,6 +132,9 @@ button:focus-visible { outline: 2px solid #d3c2ff; outline-offset: 2px; }
 .daily-breakdown { margin-top: 10px; }
 .daily-breakdown th:last-child { text-align: right; }
 .stats-back { display: inline-block; margin-top: 20px; color: #a68dbc; text-decoration: none; }
+.stats-actions { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.stats-forget { padding: 0; border: 0; background: none; color: #776c82; font: inherit; cursor: pointer; }
+.stats-forget:hover { color: #bca8d0; }
 @media (max-width: 760px) {
   .stats-login, .analytics-breakdowns { grid-template-columns: 1fr; }
   .analytics-totals { grid-template-columns: repeat(2, 1fr); }

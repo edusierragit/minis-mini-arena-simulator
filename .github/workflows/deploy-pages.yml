@@ -31,6 +31,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build
+        env:
+          VITE_CANONICAL_DEPLOYMENT_URL: https://minis-mini-arena-simulator.pages.dev/
         run: npm run build
       - name: Configure Pages
         uses: actions/configure-pages@v5

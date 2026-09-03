@@ -28,7 +28,7 @@ export function ClassSelector({ onSelect }: ClassSelectorProps) {
             <img src={assetUrl(classDefinition.icon)} alt="" />
             <span className="class-card-copy">
               <strong>{classDefinition.name}</strong>
-              <small>{classDefinition.playable ? "PLAYABLE" : "COMING SOON"}</small>
+              <small>{classDefinition.playable ? "PLAYABLE" : classDefinition.availabilityLabel ?? "COMING SOON"}</small>
             </span>
           </button>
         ))}

@@ -25,6 +25,7 @@ export const classDefinitions: ClassDefinition[] = [
     name,
     color,
     playable: false,
+    availabilityLabel: id === "death-knight" ? "COMING NEVER" : "COMING SOON",
     icon: `icons/classes/${id}.jpg`,
     spells: [],
   })),

@@ -28,6 +28,32 @@ interface AnalyticsSummary {
 
 const TOKEN_STORAGE_KEY = "minis-mini-arena-simulator:stats-token";
 
+function getRememberedToken(): string {
+  try {
+    return localStorage.getItem(TOKEN_STORAGE_KEY) ?? sessionStorage.getItem(TOKEN_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function rememberToken(token: string) {
+  try {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  } catch {
+    // The dashboard remains usable when persistent browser storage is disabled.
+  }
+}
+
+function forgetRememberedToken() {
+  try {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  } catch {
+    // Nothing else is required when browser storage is unavailable.
+  }
+}
+
 function totalFor(summary: AnalyticsSummary, event: string): number {
   return summary.totals.find((row) => row.value === event)?.count ?? 0;
 }
@@ -53,7 +79,7 @@ function Breakdown({ title, rows }: { title: string; rows: CountRow[] }) {
 }
 
 export function AnalyticsDashboard() {
-  const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_STORAGE_KEY) ?? "");
+  const [token, setToken] = useState(getRememberedToken);
   const [days, setDays] = useState(30);
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(false);
@@ -76,7 +102,7 @@ export function AnalyticsDashboard() {
       });
       if (!response.ok) throw new Error(response.status === 401 ? "Invalid dashboard token." : "Stats are unavailable.");
       const data = await response.json() as AnalyticsSummary;
-      sessionStorage.setItem(TOKEN_STORAGE_KEY, token.trim());
+      rememberToken(token.trim());
       setSummary(data);
     } catch (loadError) {
       setSummary(null);
@@ -84,6 +110,13 @@ export function AnalyticsDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const forgetToken = () => {
+    forgetRememberedToken();
+    setToken("");
+    setSummary(null);
+    setError("");
   };
 
   return (
@@ -152,7 +185,14 @@ export function AnalyticsDashboard() {
           </>
         )}
 
-        <a className="stats-back" href={window.location.pathname}>← Back to the game</a>
+        <div className="stats-actions">
+          <a className="stats-back" href={window.location.pathname}>← Back to the game</a>
+          {token && (
+            <button type="button" className="stats-forget" onClick={forgetToken}>
+              Forget saved token
+            </button>
+          )}
+        </div>
       </section>
     </main>
   );
