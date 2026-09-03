@@ -68,9 +68,12 @@ export function ClassSelector({ onSelect }: ClassSelectorProps) {
           className="analytics-toggle"
           onClick={toggleAnalytics}
           disabled={browserOptOut}
-          title={browserOptOut ? "Disabled by your browser privacy signal" : "Toggle anonymous usage statistics"}
+          aria-pressed={!analyticsAllowed}
+          title={browserOptOut
+            ? "This browser has asked sites not to track anonymous usage"
+            : "Only controls anonymous metrics sent by this browser"}
         >
-          Stats: {browserOptOut ? "browser opt-out" : analyticsAllowed ? "on" : "off"}
+          My anonymous usage: {browserOptOut ? "blocked by browser" : analyticsAllowed ? "counted" : "not counted"}
         </button>
       </footer>
     </main>
