@@ -35,6 +35,8 @@ export function KeybindConfigurator({
 }: KeybindConfiguratorProps) {
   const [capturing, setCapturing] = useState<CapturingBind | null>(null);
   const captureSurfaceRef = useRef<HTMLDivElement>(null);
+  const suppressMouseButtonRef = useRef<number | null>(null);
+  const suppressClearTimerRef = useRef<number | null>(null);
   const enabledSet = useMemo(() => new Set(enabledSpellIds), [enabledSpellIds]);
   const duplicates = useMemo(() => getDuplicateBindings(bindings), [bindings]);
   const activeBindings = useMemo(
@@ -93,6 +95,7 @@ export function KeybindConfigurator({
       if (!capturedBind) return;
       event.preventDefault();
       event.stopPropagation();
+      suppressMouseButtonRef.current = event.button;
       commitBind(capturedBind);
     };
 
@@ -105,6 +108,34 @@ export function KeybindConfigurator({
       captureSurface.removeEventListener("mousedown", captureMouse, true);
     };
   }, [bindings, capturing, onBindingsChange]);
+
+  useLayoutEffect(() => {
+    const preventBindableMouseNavigation = (event: MouseEvent) => {
+      if (!mouseEventToBind(event) || event.button !== suppressMouseButtonRef.current) return;
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (event.type === "auxclick") {
+        suppressMouseButtonRef.current = null;
+      } else {
+        if (suppressClearTimerRef.current !== null) window.clearTimeout(suppressClearTimerRef.current);
+        suppressClearTimerRef.current = window.setTimeout(() => {
+          suppressMouseButtonRef.current = null;
+          suppressClearTimerRef.current = null;
+        }, 0);
+      }
+    };
+
+    // Keep browser Back/Forward and middle-button autoscroll suppressed after
+    // capture commits on mousedown and the overlay disappears before mouseup.
+    window.addEventListener("mouseup", preventBindableMouseNavigation, true);
+    window.addEventListener("auxclick", preventBindableMouseNavigation, true);
+    return () => {
+      window.removeEventListener("mouseup", preventBindableMouseNavigation, true);
+      window.removeEventListener("auxclick", preventBindableMouseNavigation, true);
+      if (suppressClearTimerRef.current !== null) window.clearTimeout(suppressClearTimerRef.current);
+    };
+  }, []);
 
   const clearBind = (spellId: string, target: TargetId) => {
     const updated = { ...bindings };
@@ -155,8 +186,8 @@ export function KeybindConfigurator({
 
       <section className="config-intro panel-inset">
         <div>
-          <strong>Click a slot, then press keys, scroll or click the mouse wheel.</strong>
-          <span>WheelUp, WheelDown, MiddleClick and Ctrl / Alt / Shift are supported.</span>
+          <strong>Click a slot, then press keys, scroll or use a mouse button.</strong>
+          <span>WheelUp/Down, MiddleClick, Mouse4–Mouse8 and Ctrl / Alt / Shift are supported.</span>
         </div>
         <div className="config-actions">
           <button type="button" className="small-button" onClick={applySuggested}>Use suggested</button>
@@ -281,7 +312,7 @@ export function KeybindConfigurator({
           <div className="capture-toast">
             <span>CAPTURING</span>
             <strong>{classDefinition.spells.find((spell) => spell.id === capturing.spellId)?.name}</strong>
-            <small>{getTargetDefinition(capturing.target).label} · Press keys, scroll, or MiddleClick · Esc cancels</small>
+            <small>{getTargetDefinition(capturing.target).label} · Press keys, scroll, or a mouse button · Esc cancels</small>
           </div>
         </div>
       )}

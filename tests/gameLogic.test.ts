@@ -42,8 +42,18 @@ describe("keybind normalization", () => {
     [{ button: 1 }, "MiddleClick"],
     [{ button: 1, ctrlKey: true }, "Ctrl+MiddleClick"],
     [{ button: 1, altKey: true, shiftKey: true }, "Alt+Shift+MiddleClick"],
-  ])("normalizes middle-click input %o as %s", (init, expected) => {
+    [{ button: 3 }, "Mouse4"],
+    [{ button: 4, ctrlKey: true }, "Ctrl+Mouse5"],
+    [{ button: 5, altKey: true, shiftKey: true }, "Alt+Shift+Mouse6"],
+    [{ button: 7, ctrlKey: true, altKey: true, shiftKey: true }, "Ctrl+Alt+Shift+Mouse8"],
+  ])("normalizes bindable mouse input %o as %s", (init, expected) => {
     expect(mouseEventToBind(new MouseEvent("mousedown", init))).toBe(expected);
+  });
+
+  it("ignores left-click, right-click, and Meta mouse combinations", () => {
+    expect(mouseEventToBind(new MouseEvent("mousedown", { button: 0 }))).toBeNull();
+    expect(mouseEventToBind(new MouseEvent("mousedown", { button: 2 }))).toBeNull();
+    expect(mouseEventToBind(new MouseEvent("mousedown", { button: 3, metaKey: true }))).toBeNull();
   });
 
   it("finds every duplicated bind", () => {

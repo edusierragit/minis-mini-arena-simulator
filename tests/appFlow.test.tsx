@@ -30,6 +30,13 @@ function captureMiddleClick(testId: string, init: MouseEventInit = {}): MouseEve
   return event;
 }
 
+function captureExtraMouse(testId: string, button: number, init: MouseEventInit = {}): MouseEvent {
+  fireEvent.click(screen.getByTestId(testId));
+  const event = new MouseEvent("mousedown", { ...init, button, bubbles: true, cancelable: true });
+  fireEvent(screen.getByRole("dialog", { name: "Capturing keybind" }), event);
+  return event;
+}
+
 function suggestedEvent(spell: string, target: number): KeyboardEventInit {
   if (spell === "Frostbolt (Rank 1)") return { key: String(target) };
   if (spell === "Polymorph") return { key: String(target), shiftKey: true };
@@ -149,6 +156,37 @@ describe("complete app flow", () => {
       cancelable: true,
     });
     fireEvent(document.querySelector(".practice-screen")!, practiceEvent);
+    expect(practiceEvent.defaultPrevented).toBe(true);
+    expect(screen.getByTestId("feedback-copy").textContent).toBe("CORRECT");
+  });
+
+  it("captures extra mouse buttons with modifiers and blocks browser navigation", () => {
+    render(<App />);
+    chooseMage();
+
+    const captureEvent = captureExtraMouse("bind-polymorph-3", 3, { ctrlKey: true, shiftKey: true });
+    expect(captureEvent.defaultPrevented).toBe(true);
+    expect(screen.getByTestId("bind-polymorph-3").textContent).toContain("Ctrl+Shift+Mouse4");
+
+    const releaseEvent = new MouseEvent("mouseup", {
+      button: 3,
+      ctrlKey: true,
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    fireEvent(window, releaseEvent);
+    expect(releaseEvent.defaultPrevented).toBe(true);
+
+    fireEvent.click(screen.getByTestId("start-practice"));
+    const practiceEvent = new MouseEvent("mousedown", {
+      button: 3,
+      ctrlKey: true,
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    fireEvent(window, practiceEvent);
     expect(practiceEvent.defaultPrevented).toBe(true);
     expect(screen.getByTestId("feedback-copy").textContent).toBe("CORRECT");
   });

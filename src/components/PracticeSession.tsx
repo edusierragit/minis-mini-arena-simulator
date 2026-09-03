@@ -187,19 +187,23 @@ export function PracticeSession({
       settleChallenge("incorrect", pressedBind);
     };
 
-    const preventMiddleAuxClick = (event: MouseEvent) => {
-      if (event.button === 1) event.preventDefault();
+    const preventBindableMouseNavigation = (event: MouseEvent) => {
+      if (!mouseEventToBind(event)) return;
+      event.preventDefault();
+      event.stopPropagation();
     };
 
     window.addEventListener("keydown", handlePracticeKey, true);
     practiceSurface.addEventListener("wheel", handlePracticeWheel, { capture: true, passive: false });
-    practiceSurface.addEventListener("mousedown", handlePracticeMouse, true);
-    practiceSurface.addEventListener("auxclick", preventMiddleAuxClick, true);
+    window.addEventListener("mousedown", handlePracticeMouse, true);
+    window.addEventListener("mouseup", preventBindableMouseNavigation, true);
+    window.addEventListener("auxclick", preventBindableMouseNavigation, true);
     return () => {
       window.removeEventListener("keydown", handlePracticeKey, true);
       practiceSurface.removeEventListener("wheel", handlePracticeWheel, true);
-      practiceSurface.removeEventListener("mousedown", handlePracticeMouse, true);
-      practiceSurface.removeEventListener("auxclick", preventMiddleAuxClick, true);
+      window.removeEventListener("mousedown", handlePracticeMouse, true);
+      window.removeEventListener("mouseup", preventBindableMouseNavigation, true);
+      window.removeEventListener("auxclick", preventBindableMouseNavigation, true);
     };
   }, [challenge, feedback, finished, paused, settleChallenge, togglePause]);
 

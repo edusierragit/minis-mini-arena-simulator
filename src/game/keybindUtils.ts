@@ -45,15 +45,25 @@ export function wheelEventToBind(event: WheelEvent): string | null {
   return parts.join("+");
 }
 
-/** Normalize the wheel-button click. Mouse button 1 is the physical middle button. */
+const BINDABLE_MOUSE_BUTTONS: Record<number, string> = {
+  1: "MiddleClick",
+  3: "Mouse4",
+  4: "Mouse5",
+  5: "Mouse6",
+  6: "Mouse7",
+  7: "Mouse8",
+};
+
+/** Normalize middle and extra mouse buttons using the same names during capture and play. */
 export function mouseEventToBind(event: MouseEvent): string | null {
-  if (event.button !== 1 || event.metaKey) return null;
+  const mouseButton = BINDABLE_MOUSE_BUTTONS[event.button];
+  if (!mouseButton || event.metaKey) return null;
 
   const parts: string[] = [];
   if (event.ctrlKey) parts.push("Ctrl");
   if (event.altKey) parts.push("Alt");
   if (event.shiftKey) parts.push("Shift");
-  parts.push("MiddleClick");
+  parts.push(mouseButton);
   return parts.join("+");
 }
 
