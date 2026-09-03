@@ -6,7 +6,7 @@ Mage, Rogue, Priest, Paladin, Druid, and Shaman are playable. Keyboard keys, mod
 
 Built by [Eduardo Sierra](https://x.com/eduardo39657119) and **Minimalistic**.
 
-Optional, privacy-friendly usage analytics are supported through GoatCounter. Copy `.env.example` to `.env.production` and set the public `VITE_GOATCOUNTER_ENDPOINT`. Only aggregate visits, class selections, and session lifecycle events are recorded; binds and performance results never leave the player's browser. See [PRIVACY.md](PRIVACY.md).
+Optional, privacy-friendly usage analytics are supported through GoatCounter. Copy `.env.example` to `.env.production` and set the public `VITE_GOATCOUNTER_ENDPOINT`. Only aggregate visits, total site opens, class selections, and session lifecycle events are recorded; binds and performance results never leave the player's browser. See [PRIVACY.md](PRIVACY.md).
 
 Ally-dispel drills show real WotLK debuff icons on Self, Party 1, or Party 2. Challenges respect dispel categories (Curse, Magic, Poison, and Disease), so a class is only asked to remove effects it can actually dispel. Bundled WotLK success/failure sounds can be muted from the practice HUD.
 

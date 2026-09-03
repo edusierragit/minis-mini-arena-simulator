@@ -1,4 +1,5 @@
 type AnalyticsEventName =
+  | "site-opened"
   | "class-selected"
   | "practice-started"
   | "practice-restarted"
@@ -10,6 +11,7 @@ interface GoatCounterVars {
   path: string;
   title: string;
   event: true;
+  no_session: true;
 }
 
 interface GoatCounterClient {
@@ -73,6 +75,7 @@ export function initializeAnalytics() {
   script.dataset.goatcounter = endpoint;
   script.addEventListener("load", flushQueue, { once: true });
   document.head.appendChild(script);
+  trackAnalyticsEvent("site-opened");
 }
 
 export function trackAnalyticsEvent(name: AnalyticsEventName, dimensions: AnalyticsDimensions = {}) {
@@ -88,5 +91,6 @@ export function trackAnalyticsEvent(name: AnalyticsEventName, dimensions: Analyt
     path,
     title: name.split("-").map((word) => word[0].toUpperCase() + word.slice(1)).join(" "),
     event: true,
+    no_session: true,
   });
 }

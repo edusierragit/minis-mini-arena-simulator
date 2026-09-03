@@ -4,7 +4,7 @@ Mini's Mini Arena Simulator stores keybinds and settings only in your browser's 
 
 When analytics are enabled, the site uses [GoatCounter](https://www.goatcounter.com/) to collect anonymous, aggregate usage information without cookies or persistent personal identifiers:
 
-- page visits and referring site;
+- page visits, total site opens, and referring site;
 - approximate country, browser, and screen size;
 - selected playable class;
 - practice sessions started, restarted, and completed;

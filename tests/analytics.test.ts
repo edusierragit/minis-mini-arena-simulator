@@ -38,10 +38,17 @@ describe("anonymous analytics", () => {
     window.goatcounter = { count };
     script?.dispatchEvent(new Event("load"));
 
-    expect(count).toHaveBeenCalledWith({
+    expect(count).toHaveBeenNthCalledWith(1, {
+      path: "event/site-opened",
+      title: "Site Opened",
+      event: true,
+      no_session: true,
+    });
+    expect(count).toHaveBeenNthCalledWith(2, {
       path: "event/practice-started/class-mage/difficulty-normal/rounds-30",
       title: "Practice Started",
       event: true,
+      no_session: true,
     });
   });
 });
