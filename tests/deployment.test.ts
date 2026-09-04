@@ -9,7 +9,7 @@ describe("staged deployment redirect", () => {
   it("preserves shared-link campaigns and fragments", () => {
     expect(buildRedirectDestination(
       "https://arena.pages.dev/",
-      "https://edusierragit.github.io/minis-mini-arena-simulator/?utm_source=whatsapp#practice",
+      "https://old-host.example/minis-mini-arena-simulator/?utm_source=whatsapp#practice",
     )).toBe("https://arena.pages.dev/?utm_source=whatsapp#practice");
   });
 

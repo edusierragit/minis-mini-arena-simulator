@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
+    if: github.repository == 'edusierragit/minis-mini-arena-simulator'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

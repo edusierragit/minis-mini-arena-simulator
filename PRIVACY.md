@@ -2,7 +2,7 @@
 
 Mini's Mini Arena Simulator stores keybinds and settings only in your browser's local storage. They are never included in analytics.
 
-The canonical Cloudflare deployment uses a same-origin endpoint to increment anonymous daily aggregate counters in Cloudflare D1. The GitHub Pages deployment can temporarily use [GoatCounter](https://www.goatcounter.com/) while the migration is in progress.
+The canonical Cloudflare deployment uses a same-origin endpoint to increment anonymous daily aggregate counters in Cloudflare D1. No third-party analytics script is loaded.
 
 The following aggregate activity can be counted:
 

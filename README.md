@@ -27,18 +27,11 @@ npm run build
 
 The static output is written to `dist/`.
 
-## Deploy free on GitHub Pages
+## Deployment
 
-1. Push the project to a GitHub repository whose default branch is `main`.
-2. In the repository, open **Settings → Pages**.
-3. Under **Build and deployment**, choose **GitHub Actions** as the source.
-4. Push to `main`, or run the included **Deploy to GitHub Pages** workflow manually.
+The canonical deployment runs on Cloudflare Pages. It builds with `npm run build:cloudflare`, publishes `dist/`, and binds the Pages Functions to D1 using `ANALYTICS_DB`. The private dashboard additionally requires the encrypted `ANALYTICS_ADMIN_TOKEN` secret; its value must never be committed. Database schemas are versioned in `migrations/`.
 
-Vite uses relative asset paths, so the same build also works when uploaded to Vercel or another static host.
-
-## Deploy free on Cloudflare Pages
-
-Cloudflare is the recommended canonical deployment when first-party analytics are enabled. Use `npm run build:cloudflare`, publish `dist/`, then bind the included Pages Functions to D1. The existing GitHub Pages URL remains live until the Cloudflare version is tested. Follow [the staged migration guide](docs/CLOUDFLARE_DEPLOYMENT.md).
+The included GitHub Pages workflow exists only to redirect the previously shared URL to the canonical Cloudflare deployment. It is restricted to this repository and does not run in forks.
 
 ## Add game data
 
