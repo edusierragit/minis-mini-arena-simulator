@@ -42,7 +42,7 @@ describe("anonymous analytics", () => {
     script?.dispatchEvent(new Event("load"));
 
     expect(count).toHaveBeenNthCalledWith(1, {
-      path: "event/site-opened/referrer-direct",
+      path: "event/site-opened/browser-other/device-desktop/language-en/os-other/referrer-direct/viewport-standard/visittype-first",
       title: "Site Opened",
       event: true,
       no_session: true,
@@ -69,7 +69,15 @@ describe("anonymous analytics", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:3000/api/analytics");
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
       event: "site-opened",
-      dimensions: { referrer: "direct" },
+      dimensions: {
+        referrer: "direct",
+        browser: "other",
+        os: "other",
+        device: "desktop",
+        language: "en",
+        viewport: "standard",
+        visitType: "first",
+      },
     });
     expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({
       event: "practice-started",

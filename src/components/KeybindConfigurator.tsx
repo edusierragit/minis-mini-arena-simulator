@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DIFFICULTIES, SESSION_LENGTHS } from "../config";
 import { bindingKey, getDuplicateBindings, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../game/keybindUtils";
 import { getTargetDefinition, getTargetsForMode } from "../game/targets";
+import { getBrowserReservedShortcuts } from "../game/browserShortcutLock";
 import type { Bindings, ClassDefinition, PracticeSettings, TargetId } from "../types";
 import { assetUrl } from "../utils/assets";
 
@@ -44,6 +45,10 @@ export function KeybindConfigurator({
     [bindings, enabledSet],
   );
   const activeDuplicates = useMemo(() => getDuplicateBindings(activeBindings), [activeBindings]);
+  const reservedShortcuts = useMemo(
+    () => getBrowserReservedShortcuts(Object.values(activeBindings)),
+    [activeBindings],
+  );
   const totalBinds = classDefinition.spells.length * 3;
   const configuredCount = classDefinition.spells.reduce(
     (count, spell) => count + getTargetsForMode(spell.targetMode).filter((target) => bindings[bindingKey(spell.id, target.id)]).length,
@@ -206,8 +211,13 @@ export function KeybindConfigurator({
                   <div className="spell-title-line">
                     <h2>{spell.name}</h2>
                     <span className={`target-mode-chip mode-${spell.targetMode}`}>{spell.targetMode === "arena" ? "ENEMY" : "ALLY · LEVEL 2"}</span>
+                    {spell.macroSteps && <span className="target-mode-chip macro-chip">MACRO</span>}
+                    {spell.counterplay && <span className="target-mode-chip timing-chip">TIMING · ADVANCED</span>}
                   </div>
                   <p>{spell.description}</p>
+                  {spell.macroSteps && (
+                    <span className="macro-steps">{spell.macroSteps.join(" → ").toUpperCase()}</span>
+                  )}
                   {spell.dispels && (
                     <span className="dispel-types">REMOVES {spell.dispels.join(" · ").toUpperCase()}</span>
                   )}
@@ -298,6 +308,11 @@ export function KeybindConfigurator({
           <small>{enabledSpellIds.length}/{classDefinition.spells.length} abilities enabled</small>
           {activeDuplicates.size > 0 && <span>Resolve duplicate binds in enabled abilities to start.</span>}
           {enabledSpellIds.length > 0 && activeConfiguredCount === 0 && <span>Configure at least one enabled ability bind.</span>}
+          {reservedShortcuts.length > 0 && (
+            <small className="reserved-bind-note">
+              Protected fullscreen will activate for {reservedShortcuts.join(", ")}.
+            </small>
+          )}
         </div>
         <button
           type="button"

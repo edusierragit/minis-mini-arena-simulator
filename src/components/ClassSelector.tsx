@@ -40,8 +40,6 @@ export function ClassSelector({ onSelect }: ClassSelectorProps) {
         <a href="https://x.com/eduardo39657119" target="_blank" rel="noreferrer">Eduardo Sierra</a>
         <span>and Minimalistic</span>
         <i>·</i>
-        <a href="https://github.com/edusierragit/minis-mini-arena-simulator" target="_blank" rel="noreferrer">Source</a>
-        <i>·</i>
         <a href="https://github.com/edusierragit/minis-mini-arena-simulator/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
       </footer>
     </main>

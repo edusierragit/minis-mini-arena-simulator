@@ -4,9 +4,11 @@ A standalone, Gladius-inspired keyboard reaction trainer for practicing WoW aren
 
 Mage, Rogue, Priest, Paladin, Druid, and Shaman are playable. Keyboard keys, modifier combinations, WheelUp, WheelDown, MiddleClick, and extra mouse buttons Mouse4 through Mouse20 are supported when exposed by the browser or mouse driver. Abilities can be enabled or disabled individually; the default Mage pool is Frostbolt Rank 1, Deep Freeze, Counterspell, and Polymorph.
 
+When an enabled bind conflicts with a browser shortcut such as `Ctrl+W`, supported Chromium browsers automatically enter protected fullscreen practice through the Keyboard Lock API. Priest also includes an optional advanced Shadow Word: Death drill that must be pressed in the final 300 ms of an incoming Polymorph or Fear cast. Rogue includes one-bind arena drills for Shadowstep + Kick, Shadowstep + Blind, and Shadowstep + Cheap Shot.
+
 Built by [Eduardo Sierra](https://x.com/eduardo39657119) and **Minimalistic**.
 
-Privacy-friendly usage analytics support both the temporary GoatCounter integration on GitHub Pages and a same-origin Cloudflare Pages Function backed by aggregate D1 counters. Only site opens, acquisition data, class selections, and session lifecycle events are recorded; binds and performance results never leave the player's browser. See [PRIVACY.md](PRIVACY.md).
+Privacy-friendly usage analytics use a same-origin Cloudflare Pages Function backed by aggregate D1 counters. They cover the practice funnel, acquisition, and broad anonymous client categories; binds and performance results never leave the player's browser. See [PRIVACY.md](PRIVACY.md).
 
 Ally-dispel drills show real WotLK debuff icons on Self, Party 1, or Party 2. Challenges respect dispel categories (Curse, Magic, Poison, and Disease), so a class is only asked to remove effects it can actually dispel. Bundled WotLK success/failure sounds can be muted from the practice HUD.
 

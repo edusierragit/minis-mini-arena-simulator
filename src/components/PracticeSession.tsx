@@ -8,7 +8,9 @@ import { bindingKey, keyboardEventToBind, mouseEventToBind, wheelEventToBind } f
 import { calculateStats } from "../game/scoring";
 import { getArenaTargetNumber, getTargetDefinition } from "../game/targets";
 import { playFeedbackSound, prepareFeedbackAudio } from "../audio/gameAudio";
+import { assetUrl } from "../utils/assets";
 import type { Bindings, Challenge, ClassDefinition, PracticeResult, PracticeSettings, ResultKind } from "../types";
+import type { BrowserShortcutLockStatus } from "../game/browserShortcutLock";
 import { GladiusPanel } from "./GladiusPanel";
 import { PartyPanel } from "./PartyPanel";
 import { PracticeHUD } from "./PracticeHUD";
@@ -19,6 +21,7 @@ interface PracticeSessionProps {
   bindings: Bindings;
   enabledSpellIds: string[];
   settings: PracticeSettings;
+  shortcutLockStatus: BrowserShortcutLockStatus;
   onSettingsChange: (settings: PracticeSettings) => void;
   onChangeBinds: () => void;
   onChangeClass: () => void;
@@ -27,6 +30,11 @@ interface PracticeSessionProps {
 interface FeedbackState {
   kind: ResultKind;
   expectedBind: string;
+  reason: "wrong-bind" | "too-early" | "missed" | null;
+}
+
+function getChallengeDurationMs(challenge: Challenge, reactionWindowMs: number): number {
+  return challenge.counterplay?.castDurationMs ?? reactionWindowMs;
 }
 
 export function PracticeSession({
@@ -34,6 +42,7 @@ export function PracticeSession({
   bindings,
   enabledSpellIds,
   settings,
+  shortcutLockStatus,
   onSettingsChange,
   onChangeBinds,
   onChangeClass,
@@ -56,37 +65,61 @@ export function PracticeSession({
   const activeSpell = classDefinition.spells.find((spell) => spell.id === challenge?.spellId) ?? null;
   const activeDebuff = challenge.cueId ? getDebuffDefinition(challenge.cueId) : null;
   const challengeVisual = activeDebuff ?? activeSpell;
+  const challengeDurationMs = getChallengeDurationMs(challenge, reactionWindowMs);
+  const counterplayWindowOpen = Boolean(
+    challenge.counterplay && remainingMs <= challenge.counterplay.successWindowMs,
+  );
 
   useEffect(() => {
     prepareFeedbackAudio();
   }, []);
 
+  useEffect(() => {
+    if (shortcutLockStatus === "off" || shortcutLockStatus === "locked") return;
+    const warnBeforeClosing = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeClosing);
+    return () => window.removeEventListener("beforeunload", warnBeforeClosing);
+  }, [shortcutLockStatus]);
+
   const settleChallenge = useCallback((kind: ResultKind, pressedBind: string | null) => {
     if (!challenge || feedback || paused || settledRef.current) return;
     settledRef.current = true;
 
+    const durationMs = getChallengeDurationMs(challenge, reactionWindowMs);
     const elapsed = Math.min(
-      reactionWindowMs,
+      durationMs,
       Math.round(challenge.elapsedMs + performance.now() - challenge.startedAt),
     );
     const expectedBind = bindings[bindingKey(challenge.spellId, challenge.target)];
+    const pressedTooEarly = Boolean(
+      challenge.counterplay
+      && pressedBind === expectedBind
+      && durationMs - elapsed > challenge.counterplay.successWindowMs,
+    );
     const finalKind: ResultKind = kind === "missed"
       ? "missed"
-      : pressedBind === expectedBind ? "correct" : "incorrect";
+      : pressedBind === expectedBind && !pressedTooEarly ? "correct" : "incorrect";
 
     setResults((previous) => [
       ...previous,
       {
         challenge: { spellId: challenge.spellId, target: challenge.target, targetMode: challenge.targetMode },
         kind: finalKind,
-        reactionMs: finalKind === "missed" ? null : elapsed,
+        reactionMs: finalKind === "missed" || challenge.counterplay ? null : elapsed,
         pressedBind,
         expectedBind,
       },
     ]);
-    setFeedback({ kind: finalKind, expectedBind });
+    setFeedback({
+      kind: finalKind,
+      expectedBind,
+      reason: kind === "missed" ? "missed" : pressedTooEarly ? "too-early" : finalKind === "incorrect" ? "wrong-bind" : null,
+    });
     playFeedbackSound(finalKind, settings.muted);
-    setRemainingMs(Math.max(0, reactionWindowMs - elapsed));
+    setRemainingMs(Math.max(0, durationMs - elapsed));
   }, [bindings, challenge, feedback, paused, reactionWindowMs, settings.muted]);
 
   useEffect(() => {
@@ -94,18 +127,18 @@ export function PracticeSession({
 
     const updateRemaining = () => {
       const elapsed = challenge.elapsedMs + performance.now() - challenge.startedAt;
-      setRemainingMs(Math.max(0, reactionWindowMs - elapsed));
+      setRemainingMs(Math.max(0, challengeDurationMs - elapsed));
     };
     updateRemaining();
     const interval = window.setInterval(updateRemaining, 40);
-    const timeoutDelay = Math.max(0, reactionWindowMs - challenge.elapsedMs);
+    const timeoutDelay = Math.max(0, challengeDurationMs - challenge.elapsedMs);
     const timeout = window.setTimeout(() => settleChallenge("missed", null), timeoutDelay);
 
     return () => {
       window.clearInterval(interval);
       window.clearTimeout(timeout);
     };
-  }, [challenge, feedback, finished, paused, reactionWindowMs, settleChallenge]);
+  }, [challenge, challengeDurationMs, feedback, finished, paused, settleChallenge]);
 
   useEffect(() => {
     if (!feedback || !challenge) return;
@@ -126,7 +159,7 @@ export function PracticeSession({
       const next = generateChallenge(classDefinition, bindings, enabledSpellIds, challenge, challenge.id + 1);
       settledRef.current = false;
       setChallenge(next);
-      setRemainingMs(reactionWindowMs);
+      setRemainingMs(getChallengeDurationMs(next, reactionWindowMs));
       setFeedback(null);
     }, delay);
 
@@ -227,7 +260,7 @@ export function PracticeSession({
     setFeedback(null);
     setPaused(false);
     setFinished(false);
-    setRemainingMs(reactionWindowMs);
+    setRemainingMs(getChallengeDurationMs(next, reactionWindowMs));
     setChallenge(next);
   }, [bindings, classDefinition, enabledSpellIds, reactionWindowMs, settings.difficulty, settings.sessionLength]);
 
@@ -244,9 +277,11 @@ export function PracticeSession({
   }
 
   const feedbackCopy = feedback?.kind === "correct"
-    ? "CORRECT"
-    : feedback?.kind === "incorrect"
-      ? `WRONG · USE ${activeSpell?.name.toUpperCase()} · ${feedback.expectedBind}`
+    ? challenge.counterplay ? "COUNTERED" : "CORRECT"
+    : feedback?.reason === "too-early"
+      ? `TOO EARLY · USE ${activeSpell?.name.toUpperCase()} NEAR CAST END · ${feedback.expectedBind}`
+      : feedback?.kind === "incorrect"
+        ? `WRONG · USE ${activeSpell?.name.toUpperCase()} · ${feedback.expectedBind}`
       : feedback?.kind === "missed"
         ? `MISSED · USE ${activeSpell?.name.toUpperCase()} · ${feedback.expectedBind}`
         : null;
@@ -256,6 +291,15 @@ export function PracticeSession({
   const hasAllyTraining = classDefinition.spells.some(
     (spell) => spell.targetMode === "ally" && enabledSpellIds.includes(spell.id),
   );
+  const shortcutProtectionCopy = shortcutLockStatus === "locked"
+    ? "Browser shortcuts locked · Ctrl+W protected"
+    : shortcutLockStatus === "requesting"
+      ? "Requesting browser shortcut protection…"
+      : shortcutLockStatus === "fullscreen-only"
+        ? "Fullscreen active · Keyboard Lock was not granted"
+        : shortcutLockStatus === "unavailable"
+          ? "This browser cannot protect reserved shortcuts"
+          : "Press the configured spell + target bind. No clicking required.";
 
   return (
     <main className="practice-screen" ref={practiceSurfaceRef}>
@@ -263,7 +307,7 @@ export function PracticeSession({
         stats={stats}
         currentRound={Math.min(results.length + (feedback ? 0 : 1), settings.sessionLength)}
         sessionLength={settings.sessionLength}
-        remainingRatio={remainingMs / reactionWindowMs}
+        remainingRatio={remainingMs / challengeDurationMs}
         paused={paused}
         muted={settings.muted}
         onPauseToggle={togglePause}
@@ -278,13 +322,28 @@ export function PracticeSession({
             <strong data-testid="feedback-copy">{feedbackCopy}</strong>
           ) : (
             <>
-              <span>{activeDebuff ? "DISPEL" : "CAST"}</span>
-              <strong>{activeDebuff?.name ?? activeSpell?.name}</strong>
-              <i>ON</i>
+              <span>{challenge.counterplay ? "TIME" : activeDebuff ? "DISPEL" : "CAST"}</span>
+              <strong>{challenge.counterplay ? activeSpell?.name : activeDebuff?.name ?? activeSpell?.name}</strong>
+              <i>{challenge.counterplay ? "VS" : "ON"}</i>
+              {challenge.counterplay && <b>{activeDebuff?.name?.toUpperCase()}</b>}
+              {challenge.counterplay && <i>FROM</i>}
               <b>{targetDefinition.label.toUpperCase()}</b>
             </>
           )}
         </div>
+
+        {challenge.counterplay && activeDebuff && (
+          <div className={`counter-cast ${counterplayWindowOpen ? "is-open" : ""}`}>
+            <img className="wow-icon" src={assetUrl(activeDebuff.icon)} alt="" />
+            <div className="counter-cast-body">
+              <div><strong>{activeDebuff.name}</strong><span>{counterplayWindowOpen ? "DEATH NOW" : "WAIT"}</span></div>
+              <div className="counter-cast-track">
+                <i style={{ transform: `scaleX(${Math.max(0, 1 - remainingMs / challengeDurationMs)})` }} />
+              </div>
+            </div>
+            <small>{Math.ceil(remainingMs)}ms</small>
+          </div>
+        )}
 
         <div className={`combat-panels ${hasAllyTraining ? "has-party-panel" : ""}`}>
           <GladiusPanel
@@ -303,7 +362,7 @@ export function PracticeSession({
           )}
         </div>
 
-        <p className="practice-hint">Press the configured spell + target bind. No clicking required.</p>
+        <p className={`practice-hint shortcut-${shortcutLockStatus}`}>{shortcutProtectionCopy}</p>
       </div>
 
       {paused && (

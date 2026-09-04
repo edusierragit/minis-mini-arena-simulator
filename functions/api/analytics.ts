@@ -53,6 +53,30 @@ export const onRequestPost: PagesHandler<AnalyticsEnv> = async ({ request, env }
       record.campaign,
     ).run();
 
+    if (record.event === "site-opened") {
+      try {
+        await env.ANALYTICS_DB.prepare(`
+          INSERT INTO analytics_client_daily (
+            day, browser, operating_system, device, language, viewport, visit_type, count
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+          ON CONFLICT (day, browser, operating_system, device, language, viewport, visit_type)
+          DO UPDATE SET count = count + 1
+        `).bind(
+          day,
+          record.browser,
+          record.operatingSystem,
+          record.device,
+          record.language,
+          record.viewport,
+          record.visitType,
+        ).run();
+      } catch (classificationError) {
+        // Core counters remain available while the optional classification
+        // migration is being applied.
+        console.warn("Unable to record anonymous client classification", classificationError);
+      }
+    }
+
     return emptyResponse();
   } catch (error) {
     console.error("Failed to record analytics event", error);

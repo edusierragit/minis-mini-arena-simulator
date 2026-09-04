@@ -27,6 +27,7 @@ declare global {
 
 const GOATCOUNTER_SCRIPT_ID = "goatcounter-analytics";
 const MAX_QUEUED_EVENTS = 20;
+const VISITED_STORAGE_KEY = "minis-mini-arena-simulator:visited";
 const queuedGoatCounterEvents: GoatCounterVars[] = [];
 
 function configuredGoatCounterEndpoint(): string | null {
@@ -61,6 +62,45 @@ function slug(value: string | number | boolean): string {
     .replace(/^-+|-+$/g, "") || "unknown";
 }
 
+function browserFamily(): string {
+  const userAgent = navigator.userAgent;
+  if ("brave" in navigator) return "brave";
+  if (/Edg\//.test(userAgent)) return "edge";
+  if (/OPR\//.test(userAgent)) return "opera";
+  if (/Firefox\//.test(userAgent)) return "firefox";
+  if (/Chrome\//.test(userAgent)) return "chrome";
+  if (/Safari\//.test(userAgent)) return "safari";
+  return "other";
+}
+
+function operatingSystem(): string {
+  const userAgent = navigator.userAgent;
+  if (/CrOS/.test(userAgent)) return "chromeos";
+  if (/Android/.test(userAgent)) return "android";
+  if (/iPhone|iPad|iPod/.test(userAgent)) return "ios";
+  if (/Windows/.test(userAgent)) return "windows";
+  if (/Mac OS X|Macintosh/.test(userAgent)) return "macos";
+  if (/Linux/.test(userAgent)) return "linux";
+  return "other";
+}
+
+function deviceCategory(): string {
+  const userAgent = navigator.userAgent;
+  if (/iPad|Tablet/.test(userAgent) || (/Android/.test(userAgent) && !/Mobile/.test(userAgent))) return "tablet";
+  if (/Mobi|iPhone|iPod|Android/.test(userAgent)) return "mobile";
+  return "desktop";
+}
+
+function visitType(): string {
+  try {
+    const returning = localStorage.getItem(VISITED_STORAGE_KEY) === "1";
+    localStorage.setItem(VISITED_STORAGE_KEY, "1");
+    return returning ? "returning" : "first";
+  } catch {
+    return "unknown";
+  }
+}
+
 function pageOpenDimensions(): AnalyticsDimensions {
   const params = new URLSearchParams(window.location.search);
   let referrer = "direct";
@@ -73,7 +113,17 @@ function pageOpenDimensions(): AnalyticsDimensions {
     }
   }
 
-  const dimensions: AnalyticsDimensions = { referrer };
+  const language = navigator.language?.slice(0, 2).toLowerCase();
+  const viewport = window.innerWidth < 768 ? "compact" : window.innerWidth >= 1440 ? "wide" : "standard";
+  const dimensions: AnalyticsDimensions = {
+    referrer,
+    browser: browserFamily(),
+    os: operatingSystem(),
+    device: deviceCategory(),
+    language: language && /^[a-z]{2}$/.test(language) ? language : "other",
+    viewport,
+    visitType: visitType(),
+  };
   const source = params.get("utm_source");
   const campaign = params.get("utm_campaign");
   if (source) dimensions.source = source;

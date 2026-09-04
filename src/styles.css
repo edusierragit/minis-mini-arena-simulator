@@ -112,16 +112,17 @@ button:focus-visible { outline: 2px solid #d3c2ff; outline-offset: 2px; }
 .analytics-card { width: min(1040px, 100%); border: 1px solid #31283c; background: rgba(12, 9, 17, 0.96); padding: 28px; box-shadow: 0 24px 80px #0008; }
 .analytics-card h1 { margin: 4px 0 2px; }
 .analytics-subtitle, .stats-updated { color: #81778c; font-size: 12px; }
-.stats-login { display: grid; grid-template-columns: minmax(220px, 1fr) 150px auto; gap: 12px; align-items: end; margin: 24px 0; }
+.stats-login { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 12px; align-items: end; margin: 24px 0; }
 .stats-login label { display: grid; gap: 6px; color: #9d90aa; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
 .stats-login input, .stats-login select { min-height: 38px; border: 1px solid #3c3147; background: #09070d; color: #eee7f4; padding: 8px 10px; }
 .stats-login .primary-button { min-height: 38px; }
 .stats-error { border: 1px solid #7d2935; background: #2c0e15; color: #ff9dab; padding: 10px 12px; }
-.analytics-totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 22px 0; }
+.analytics-totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 22px 0; }
 .analytics-totals div { border: 1px solid #392c47; background: #120d19; padding: 14px; }
 .analytics-totals span { display: block; color: #8b8096; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; }
 .analytics-totals strong { display: block; margin-top: 5px; color: #fff; font-size: 26px; }
 .analytics-breakdowns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.analytics-section-title { margin: 22px 0 10px; color: #a899b4; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
 .stats-breakdown { border: 1px solid #30263a; background: #0c0911; padding: 14px; }
 .stats-breakdown h2 { margin: 0 0 10px; font-size: 14px; color: #d8cae4; }
 .stats-breakdown p { color: #625b69; font-size: 11px; }
@@ -208,6 +209,7 @@ button:focus-visible { outline: 2px solid #d3c2ff; outline-offset: 2px; }
 .spell-identity h2 { margin: 0; font: 700 18px Georgia, serif; color: #f0ecf3; }
 .spell-identity p { margin: 4px 0 0; color: #77717e; font-size: 11px; line-height: 1.3; }
 .dispel-types { display: block; margin-top: 5px; color: #79a9cd; font-size: 7px; font-weight: 900; letter-spacing: 0.09em; }
+.macro-steps { display: block; margin-top: 5px; color: #d8bd73; font-size: 7px; font-weight: 900; letter-spacing: 0.09em; }
 .spell-row.is-disabled .spell-icon,
 .spell-row.is-disabled .spell-title-line,
 .spell-row.is-disabled .arena-bindings { opacity: 0.56; }
@@ -216,6 +218,8 @@ button:focus-visible { outline: 2px solid #d3c2ff; outline-offset: 2px; }
 .spell-row.is-disabled:hover .arena-bindings { opacity: 0.78; }
 .target-mode-chip { padding: 2px 5px; color: #9e8daf; background: #251d2e; border: 1px solid #493858; font-size: 7px; font-weight: 900; letter-spacing: 0.1em; }
 .target-mode-chip.mode-ally { color: #8dc8f2; background: #142432; border-color: #29506a; }
+.target-mode-chip.macro-chip { color: #e4c87e; background: #2c2515; border-color: #69572b; }
+.target-mode-chip.timing-chip { color: #f0c979; background: #2a2110; border-color: #6d5523; }
 .spell-toggle { display: flex; align-items: center; gap: 6px; width: fit-content; margin-top: 8px; padding: 0; color: #756e7c; cursor: pointer; background: none; border: 0; font-size: 8px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
 .spell-toggle i { position: relative; width: 22px; height: 11px; background: #29242e; border: 1px solid #49414f; border-radius: 7px; }
 .spell-toggle i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 5px; height: 5px; background: #77707c; border-radius: 50%; transition: transform 100ms, background 100ms; }
@@ -278,6 +282,7 @@ button:focus-visible { outline: 2px solid #d3c2ff; outline-offset: 2px; }
 .bind-status { color: #817a88; font-size: 12px; }
 .bind-status strong { color: #ded8e3; }
 .bind-status small { display: block; margin-top: 3px; color: #77707f; font-size: 10px; }
+.bind-status .reserved-bind-note { color: #c5a76a; }
 .bind-status span { display: block; margin-top: 3px; color: #e36270; }
 .primary-button {
   min-width: 180px;
@@ -386,6 +391,29 @@ kbd {
 .challenge-callout.is-correct strong { color: var(--green); }
 .challenge-callout.is-incorrect strong { color: var(--red); }
 .challenge-callout.is-missed strong { color: var(--amber); }
+.counter-cast {
+  display: grid;
+  grid-template-columns: 38px minmax(220px, 390px) 58px;
+  align-items: center;
+  gap: 10px;
+  width: min(520px, 100%);
+  margin: -4px 0 14px;
+  padding: 8px 10px;
+  background: #0b0910;
+  border: 1px solid #4b354f;
+  box-shadow: 0 8px 25px #0008;
+}
+.counter-cast > img { width: 36px; height: 36px; }
+.counter-cast-body { min-width: 0; }
+.counter-cast-body > div:first-child { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.counter-cast-body strong { color: #ece5f1; font-size: 11px; }
+.counter-cast-body span { color: #8d8295; font-size: 8px; font-weight: 900; letter-spacing: .12em; }
+.counter-cast-track { height: 9px; overflow: hidden; background: #1f1824; border: 1px solid #060507; }
+.counter-cast-track i { display: block; width: 100%; height: 100%; transform-origin: left; background: linear-gradient(90deg, #654182, #b56eaa); }
+.counter-cast > small { color: #a99caf; font: 700 10px ui-monospace, monospace; text-align: right; }
+.counter-cast.is-open { border-color: #63d990; box-shadow: 0 0 18px #2fc66a44; }
+.counter-cast.is-open .counter-cast-track i { background: #42d47b; }
+.counter-cast.is-open .counter-cast-body span { color: #6eed9d; }
 
 .gladius-shell {
   width: min(610px, 100%);
@@ -458,6 +486,10 @@ kbd {
 .feedback-missed .challenge-icon { box-shadow: 0 0 0 2px var(--amber), 0 0 18px var(--amber); }
 @keyframes challengeIn { from { transform: scale(0.82); opacity: 0.2; } to { transform: scale(1); opacity: 1; } }
 .practice-hint { margin: 18px 0 0; color: #5e5664; font-size: 10px; }
+.practice-hint.shortcut-locked { color: #68cb91; }
+.practice-hint.shortcut-requesting { color: #c5a76a; }
+.practice-hint.shortcut-fullscreen-only,
+.practice-hint.shortcut-unavailable { color: #e78691; }
 
 .pause-overlay { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; background: rgba(4,3,6,0.82); backdrop-filter: blur(4px); }
 .pause-overlay > div { width: min(370px, calc(100% - 40px)); padding: 34px; text-align: center; background: #141019; border: 1px solid #58456b; box-shadow: 0 25px 80px #000; }

@@ -12,16 +12,43 @@ interface DailyRow {
   count: number;
 }
 
-async function groupedCounts(db: D1Database, column: string, fromDay: string, condition = "1 = 1") {
+async function groupedCounts(db: D1Database, column: string, condition = "1 = 1") {
   const result = await db.prepare(`
     SELECT ${column} AS value, SUM(count) AS count
     FROM analytics_daily
-    WHERE day >= ? AND ${condition}
+    WHERE ${condition}
     GROUP BY ${column}
     ORDER BY count DESC
     LIMIT 50
-  `).bind(fromDay).all<CountRow>();
+  `).all<CountRow>();
   return result.results;
+}
+
+async function clientBreakdowns(db: D1Database) {
+  const grouped = async (column: string) => {
+    const result = await db.prepare(`
+      SELECT ${column} AS value, SUM(count) AS count
+      FROM analytics_client_daily
+      GROUP BY ${column}
+      ORDER BY count DESC
+      LIMIT 50
+    `).all<CountRow>();
+    return result.results;
+  };
+
+  try {
+    const [browsers, operatingSystems, devices, languages, viewports, visitTypes] = await Promise.all([
+      grouped("browser"),
+      grouped("operating_system"),
+      grouped("device"),
+      grouped("language"),
+      grouped("viewport"),
+      grouped("visit_type"),
+    ]);
+    return { browsers, operatingSystems, devices, languages, viewports, visitTypes };
+  } catch {
+    return { browsers: [], operatingSystems: [], devices: [], languages: [], viewports: [], visitTypes: [] };
+  }
 }
 
 export const onRequestGet: PagesHandler<AnalyticsEnv> = async ({ request, env }) => {
@@ -40,38 +67,31 @@ export const onRequestGet: PagesHandler<AnalyticsEnv> = async ({ request, env })
     });
   }
 
-  const requestUrl = new URL(request.url);
-  const requestedDays = Number(requestUrl.searchParams.get("days") ?? 30);
-  const days = Number.isInteger(requestedDays) ? Math.min(90, Math.max(1, requestedDays)) : 30;
-  const start = new Date();
-  start.setUTCDate(start.getUTCDate() - days + 1);
-  const fromDay = start.toISOString().slice(0, 10);
   const db = env.ANALYTICS_DB;
 
   try {
     const dailyResult = await db.prepare(`
       SELECT day, event, SUM(count) AS count
       FROM analytics_daily
-      WHERE day >= ?
       GROUP BY day, event
       ORDER BY day ASC, event ASC
-    `).bind(fromDay).all<DailyRow>();
+    `).all<DailyRow>();
 
-    const [totals, classes, difficulties, rounds, countries, referrers, sources, campaigns] = await Promise.all([
-      groupedCounts(db, "event", fromDay),
-      groupedCounts(db, "class_id", fromDay, "class_id != ''"),
-      groupedCounts(db, "difficulty", fromDay, "difficulty != ''"),
-      groupedCounts(db, "rounds", fromDay, "rounds > 0"),
-      groupedCounts(db, "country", fromDay),
-      groupedCounts(db, "referrer", fromDay, "referrer != ''"),
-      groupedCounts(db, "source", fromDay, "source != ''"),
-      groupedCounts(db, "campaign", fromDay, "campaign != ''"),
+    const [totals, classes, difficulties, rounds, countries, referrers, sources, campaigns, clients] = await Promise.all([
+      groupedCounts(db, "event"),
+      groupedCounts(db, "class_id", "class_id != '' AND event = 'class-selected'"),
+      groupedCounts(db, "difficulty", "difficulty != '' AND event = 'practice-started'"),
+      groupedCounts(db, "rounds", "rounds > 0 AND event = 'practice-started'"),
+      groupedCounts(db, "country", "event = 'site-opened'"),
+      groupedCounts(db, "referrer", "referrer != ''"),
+      groupedCounts(db, "source", "source != ''"),
+      groupedCounts(db, "campaign", "campaign != ''"),
+      clientBreakdowns(db),
     ]);
 
     return jsonResponse({
       generatedAt: new Date().toISOString(),
-      fromDay,
-      days,
+      window: "all-time",
       totals,
       byDay: dailyResult.results,
       classes,
@@ -81,6 +101,7 @@ export const onRequestGet: PagesHandler<AnalyticsEnv> = async ({ request, env })
       referrers,
       sources,
       campaigns,
+      ...clients,
     });
   } catch (error) {
     console.error("Failed to load analytics summary", error);

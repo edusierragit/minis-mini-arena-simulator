@@ -13,8 +13,7 @@ interface DailyRow {
 
 interface AnalyticsSummary {
   generatedAt: string;
-  fromDay: string;
-  days: number;
+  window: "all-time";
   totals: CountRow[];
   byDay: DailyRow[];
   classes: CountRow[];
@@ -24,6 +23,12 @@ interface AnalyticsSummary {
   referrers: CountRow[];
   sources: CountRow[];
   campaigns: CountRow[];
+  browsers: CountRow[];
+  operatingSystems: CountRow[];
+  devices: CountRow[];
+  languages: CountRow[];
+  viewports: CountRow[];
+  visitTypes: CountRow[];
 }
 
 const TOKEN_STORAGE_KEY = "minis-mini-arena-simulator:stats-token";
@@ -58,6 +63,10 @@ function totalFor(summary: AnalyticsSummary, event: string): number {
   return summary.totals.find((row) => row.value === event)?.count ?? 0;
 }
 
+function percentage(part: number, total: number): string {
+  return total > 0 ? `${Math.round((part / total) * 100)}%` : "—";
+}
+
 function Breakdown({ title, rows }: { title: string; rows: CountRow[] }) {
   return (
     <section className="stats-breakdown">
@@ -80,7 +89,6 @@ function Breakdown({ title, rows }: { title: string; rows: CountRow[] }) {
 
 export function AnalyticsDashboard() {
   const [token, setToken] = useState(getRememberedToken);
-  const [days, setDays] = useState(30);
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -95,7 +103,6 @@ export function AnalyticsDashboard() {
     setError("");
     try {
       const endpoint = new URL("./api/stats", window.location.href);
-      endpoint.searchParams.set("days", String(days));
       const response = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${token.trim()}` },
         credentials: "omit",
@@ -124,7 +131,7 @@ export function AnalyticsDashboard() {
       <section className="analytics-card">
         <p className="eyebrow">PRIVATE FIRST-PARTY ANALYTICS</p>
         <h1>Arena usage</h1>
-        <p className="analytics-subtitle">Aggregate counters only. No IPs, binds, scores, or player identifiers.</p>
+        <p className="analytics-subtitle">All-time aggregate counters. No IPs, binds, scores, or player identifiers.</p>
 
         <div className="stats-login">
           <label>
@@ -137,14 +144,6 @@ export function AnalyticsDashboard() {
               autoComplete="current-password"
             />
           </label>
-          <label>
-            Window
-            <select value={days} onChange={(event) => setDays(Number(event.target.value))}>
-              <option value={7}>7 days</option>
-              <option value={30}>30 days</option>
-              <option value={90}>90 days</option>
-            </select>
-          </label>
           <button type="button" className="primary-button" onClick={() => void loadStats()} disabled={loading}>
             {loading ? "Loading…" : "Load stats"}
           </button>
@@ -155,10 +154,15 @@ export function AnalyticsDashboard() {
         {summary && (
           <>
             <div className="analytics-totals" aria-label="Usage totals">
-              <div><span>Site opens</span><strong>{totalFor(summary, "site-opened").toLocaleString()}</strong></div>
+              <div><span>Page opens</span><strong>{totalFor(summary, "site-opened").toLocaleString()}</strong></div>
               <div><span>Class selections</span><strong>{totalFor(summary, "class-selected").toLocaleString()}</strong></div>
               <div><span>Practices started</span><strong>{totalFor(summary, "practice-started").toLocaleString()}</strong></div>
               <div><span>Sessions completed</span><strong>{totalFor(summary, "session-completed").toLocaleString()}</strong></div>
+              <div><span>Practice restarts</span><strong>{totalFor(summary, "practice-restarted").toLocaleString()}</strong></div>
+              <div>
+                <span>Completion rate</span>
+                <strong>{percentage(totalFor(summary, "session-completed"), totalFor(summary, "practice-started"))}</strong>
+              </div>
             </div>
 
             <div className="analytics-breakdowns">
@@ -168,6 +172,16 @@ export function AnalyticsDashboard() {
               <Breakdown title="Countries" rows={summary.countries} />
               <Breakdown title="Referrers" rows={summary.referrers} />
               <Breakdown title="Campaign sources" rows={summary.sources} />
+            </div>
+
+            <h2 className="analytics-section-title">Anonymous audience breakdown · Page opens are not unique people</h2>
+            <div className="analytics-breakdowns">
+              <Breakdown title="Browsers" rows={summary.browsers} />
+              <Breakdown title="Devices" rows={summary.devices} />
+              <Breakdown title="Operating systems" rows={summary.operatingSystems} />
+              <Breakdown title="Languages" rows={summary.languages} />
+              <Breakdown title="Viewport" rows={summary.viewports} />
+              <Breakdown title="Visit type" rows={summary.visitTypes} />
             </div>
 
             <section className="stats-breakdown daily-breakdown">

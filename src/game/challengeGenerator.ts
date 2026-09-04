@@ -39,9 +39,11 @@ export function generateChallenge(
     : allCandidates;
   const choice = nonRepeating[Math.floor(Math.random() * nonRepeating.length)];
   const spell = classDefinition.spells.find((candidate) => candidate.id === choice.spellId);
-  const compatibleCues = spell?.dispels
-    ? trainingDebuffs.filter((debuff) => spell.dispels?.includes(debuff.dispelType))
-    : [];
+  const compatibleCues = spell?.counterplay
+    ? trainingDebuffs.filter((debuff) => spell.counterplay?.cueIds.includes(debuff.id))
+    : spell?.dispels
+      ? trainingDebuffs.filter((debuff) => spell.dispels?.includes(debuff.dispelType))
+      : [];
   const cue = compatibleCues.length
     ? compatibleCues[Math.floor(Math.random() * compatibleCues.length)]
     : null;
@@ -52,6 +54,12 @@ export function generateChallenge(
     target: choice.target,
     targetMode: choice.targetMode,
     cueId: cue?.id ?? null,
+    counterplay: spell?.counterplay
+      ? {
+          castDurationMs: spell.counterplay.castDurationMs,
+          successWindowMs: spell.counterplay.successWindowMs,
+        }
+      : null,
     startedAt: performance.now(),
     elapsedMs: 0,
   };

@@ -8,6 +8,11 @@ const EVENT_NAMES = [
 
 const CLASS_IDS = new Set(["mage", "rogue", "priest", "paladin", "druid", "shaman"]);
 const DIFFICULTIES = new Set(["slow", "normal", "fast"]);
+const BROWSERS = new Set(["brave", "chrome", "edge", "firefox", "opera", "safari", "other"]);
+const OPERATING_SYSTEMS = new Set(["windows", "macos", "linux", "chromeos", "android", "ios", "other"]);
+const DEVICES = new Set(["desktop", "tablet", "mobile"]);
+const VIEWPORTS = new Set(["compact", "standard", "wide"]);
+const VISIT_TYPES = new Set(["first", "returning", "unknown"]);
 
 export type AnalyticsEventName = typeof EVENT_NAMES[number];
 
@@ -20,6 +25,12 @@ export interface AnalyticsRecord {
   referrer: string;
   source: string;
   campaign: string;
+  browser: string;
+  operatingSystem: string;
+  device: string;
+  language: string;
+  viewport: string;
+  visitType: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -58,6 +69,12 @@ export function normalizeAnalyticsPayload(payload: unknown, country?: unknown): 
     || event === "practice-restarted"
     || event === "session-completed";
   const acceptsAcquisition = event === "site-opened";
+  const browserCandidate = normalizedToken(dimensions.browser, 16);
+  const operatingSystemCandidate = normalizedToken(dimensions.os, 16);
+  const deviceCandidate = normalizedToken(dimensions.device, 16);
+  const languageCandidate = normalizedToken(dimensions.language, 8);
+  const viewportCandidate = normalizedToken(dimensions.viewport, 16);
+  const visitTypeCandidate = normalizedToken(dimensions.visitType, 16);
 
   return {
     event,
@@ -70,5 +87,11 @@ export function normalizeAnalyticsPayload(payload: unknown, country?: unknown): 
     referrer: acceptsAcquisition ? normalizedToken(dimensions.referrer, 100) || "direct" : "",
     source: acceptsAcquisition ? normalizedToken(dimensions.source, 60) : "",
     campaign: acceptsAcquisition ? normalizedToken(dimensions.campaign, 80) : "",
+    browser: acceptsAcquisition && BROWSERS.has(browserCandidate) ? browserCandidate : "other",
+    operatingSystem: acceptsAcquisition && OPERATING_SYSTEMS.has(operatingSystemCandidate) ? operatingSystemCandidate : "other",
+    device: acceptsAcquisition && DEVICES.has(deviceCandidate) ? deviceCandidate : "desktop",
+    language: acceptsAcquisition && /^[a-z]{2}$/.test(languageCandidate) ? languageCandidate : "other",
+    viewport: acceptsAcquisition && VIEWPORTS.has(viewportCandidate) ? viewportCandidate : "standard",
+    visitType: acceptsAcquisition && VISIT_TYPES.has(visitTypeCandidate) ? visitTypeCandidate : "unknown",
   };
 }

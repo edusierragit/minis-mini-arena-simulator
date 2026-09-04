@@ -3,11 +3,18 @@ import { describe, expect, it, vi } from "vitest";
 import { mage } from "../src/classes/mage";
 import { paladin } from "../src/classes/paladin";
 import { priest } from "../src/classes/priest";
+import { rogue } from "../src/classes/rogue";
 import { shaman } from "../src/classes/shaman";
 import { getDebuffDefinition } from "../src/data/debuffs";
 import { generateChallenge, getConfiguredChallenges } from "../src/game/challengeGenerator";
 import { bindingKey, getDuplicateBindings, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../src/game/keybindUtils";
 import { calculateStats } from "../src/game/scoring";
+import {
+  getBrowserReservedShortcuts,
+  isBrowserReservedShortcut,
+  releaseBrowserShortcutLock,
+  requestBrowserShortcutLock,
+} from "../src/game/browserShortcutLock";
 import type { Bindings, PracticeResult } from "../src/types";
 
 describe("keybind normalization", () => {
@@ -65,6 +72,42 @@ describe("keybind normalization", () => {
   });
 });
 
+describe("browser shortcut protection", () => {
+  it("detects reserved browser combinations without flagging normal arena binds", () => {
+    expect(isBrowserReservedShortcut("Ctrl+W")).toBe(true);
+    expect(isBrowserReservedShortcut("Shift+W")).toBe(false);
+    expect(getBrowserReservedShortcuts(["Ctrl+W", "Shift+1", "Ctrl+W", "Alt+ArrowLeft"]))
+      .toEqual(["Ctrl+W", "Alt+ArrowLeft"]);
+  });
+
+  it("enters fullscreen and locks the keyboard when the browser supports it", async () => {
+    const lock = vi.fn().mockResolvedValue(undefined);
+    const unlock = vi.fn();
+    const requestFullscreen = vi.fn().mockImplementation(async () => {
+      Object.defineProperty(document, "fullscreenElement", { configurable: true, value: document.documentElement });
+    });
+    const exitFullscreen = vi.fn().mockImplementation(async () => {
+      Object.defineProperty(document, "fullscreenElement", { configurable: true, value: null });
+    });
+    Object.defineProperty(document.documentElement, "requestFullscreen", { configurable: true, value: requestFullscreen });
+    Object.defineProperty(document, "exitFullscreen", { configurable: true, value: exitFullscreen });
+    Object.defineProperty(navigator, "keyboard", { configurable: true, value: { lock, unlock } });
+
+    expect(await requestBrowserShortcutLock()).toBe("locked");
+    expect(requestFullscreen).toHaveBeenCalledOnce();
+    expect(lock).toHaveBeenCalledOnce();
+
+    await releaseBrowserShortcutLock();
+    expect(unlock).toHaveBeenCalledOnce();
+    expect(exitFullscreen).toHaveBeenCalledOnce();
+
+    Reflect.deleteProperty(navigator, "keyboard");
+    Reflect.deleteProperty(document.documentElement, "requestFullscreen");
+    Reflect.deleteProperty(document, "exitFullscreen");
+    Object.defineProperty(document, "fullscreenElement", { configurable: true, value: null });
+  });
+});
+
 describe("generic challenge generation", () => {
   const bindings: Bindings = {
     [bindingKey("polymorph", "arena1")]: "Shift+1",
@@ -103,6 +146,38 @@ describe("generic challenge generation", () => {
       expect(debuff).not.toBeNull();
       expect(allowedTypes).toContain(debuff!.dispelType);
     }
+  });
+
+  it("builds Shadow Word: Death as a timed counterplay challenge", () => {
+    const challenge = generateChallenge(
+      priest,
+      { [bindingKey("shadow-word-death", "arena2")]: "2" },
+      ["shadow-word-death"],
+      null,
+      1,
+    );
+
+    expect(challenge).toMatchObject({
+      spellId: "shadow-word-death",
+      target: "arena2",
+      targetMode: "arena",
+      counterplay: { castDurationMs: 1500, successWindowMs: 300 },
+    });
+    expect(["polymorph", "fear"]).toContain(challenge.cueId);
+  });
+
+  it("treats Rogue Shadowstep macros as one bindable arena action", () => {
+    const macro = rogue.spells.find((spell) => spell.id === "shadowstep-kick");
+    expect(macro).toMatchObject({
+      name: "Shadowstep + Kick",
+      targetMode: "arena",
+      macroSteps: ["Shadowstep", "Kick"],
+    });
+    expect(getConfiguredChallenges(
+      rogue,
+      { [bindingKey("shadowstep-kick", "arena3")]: "Ctrl+Shift+3" },
+      ["shadowstep-kick"],
+    )).toEqual([{ spellId: "shadowstep-kick", target: "arena3", targetMode: "arena" }]);
   });
 });
 

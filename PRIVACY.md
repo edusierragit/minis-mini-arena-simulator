@@ -12,8 +12,11 @@ The following aggregate activity can be counted:
 - practice sessions started, restarted, and completed;
 - selected difficulty and session length;
 - explicitly supplied `utm_source` and `utm_campaign` values.
+- broad browser, operating-system and device categories;
+- two-letter browser language and coarse viewport size;
+- whether that browser has opened the trainer before, without sending a visitor ID.
 
-The game does **not** send or store configured keys or mouse buttons, IP addresses, player names, answers, scores, reaction times, user-agent strings, or local storage contents. The first-party database stores one counter per day and category combination rather than individual event records.
+The game does **not** send or store configured keys or mouse buttons, IP addresses, player names, answers, scores, reaction times, raw user-agent strings, persistent visitor identifiers, or local storage contents. The first-party database stores counters per day and broad category combination rather than individual event records.
 
 Because collection is limited to anonymous aggregate counters and uses no cookies or persistent visitor identifiers, the app does not expose a per-browser analytics switch. Global Privacy Control remains compatible with this design: no personal information is sold or shared in the first place.
 

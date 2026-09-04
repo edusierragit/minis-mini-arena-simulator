@@ -84,8 +84,35 @@ describe("complete app flow", () => {
     expect(screen.getByTestId("bind-kick-1").textContent).toContain("Ctrl+1");
     expect(screen.getByTestId("bind-blind-2").textContent).toContain("Shift+2");
     expect(screen.getByTestId("toggle-shadowstep").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("toggle-shadowstep-kick").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("bind-shadowstep-blind-2").textContent).toContain("Ctrl+Alt+2");
+    expect(screen.getByText("SHADOWSTEP → CHEAP SHOT")).not.toBeNull();
     expect(screen.getByTestId("toggle-garrote").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.queryByRole("heading", { name: "Ambush" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Eviscerate" })).toBeNull();
+    expect(screen.queryByText("Duplicate bind")).toBeNull();
     expect((screen.getByTestId("start-practice") as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("migrates an older saved Rogue loadout to the focused macro pool", () => {
+    localStorage.setItem("minis-mini-arena-simulator:v1", JSON.stringify({
+      selectedClassId: "rogue",
+      bindingsByClass: { rogue: { "kick:arena1": "Ctrl+1", "ambush:arena1": "Shift+1" } },
+      enabledSpellsByClass: { rogue: ["kick", "ambush", "eviscerate"] },
+      settings: { difficulty: "normal", sessionLength: 30, muted: false },
+    }));
+
+    render(<App />);
+
+    expect(screen.getByTestId("bind-kick-1").textContent).toContain("Ctrl+1");
+    expect(screen.getByTestId("toggle-shadowstep-kick").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("toggle-shadowstep-blind").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("toggle-shadowstep-cheap-shot").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByRole("heading", { name: "Ambush" })).toBeNull();
+
+    const saved = JSON.parse(localStorage.getItem("minis-mini-arena-simulator:v1") ?? "{}");
+    expect(saved.contentVersion).toBe(2);
+    expect(saved.bindingsByClass.rogue["ambush:arena1"]).toBeUndefined();
   });
 
   it("never mixes another class's spells into Mage, even with contaminated saved state", () => {
@@ -231,6 +258,31 @@ describe("complete app flow", () => {
     const functionKey = calloutTarget === "SELF" ? "F1" : calloutTarget === "PARTY 1" ? "F2" : "F3";
     fireEvent.keyDown(window, { key: functionKey, altKey: true });
     expect(screen.getByTestId("feedback-copy").textContent).toBe("CORRECT");
+  });
+
+  it("requires Shadow Word: Death inside the final counter-cast window", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+    fireEvent.click(screen.getByTestId("priest-class-card"));
+    fireEvent.click(screen.getByRole("button", { name: "Use suggested" }));
+    ["dispel-magic-ally", "dispel-magic-enemy", "silence", "psychic-horror"].forEach((spellId) => {
+      fireEvent.click(screen.getByTestId(`toggle-${spellId}`));
+    });
+    fireEvent.click(screen.getByTestId("toggle-shadow-word-death"));
+    fireEvent.click(screen.getByTestId("start-practice"));
+
+    const targetNumber = () => {
+      const labels = document.querySelectorAll(".challenge-callout b");
+      return Number(labels[labels.length - 1]?.textContent?.match(/[123]/)?.[0]);
+    };
+
+    fireEvent.keyDown(window, { key: String(targetNumber()) });
+    expect(screen.getByTestId("feedback-copy").textContent).toMatch(/TOO EARLY/);
+
+    await act(async () => vi.advanceTimersByTimeAsync(700));
+    await act(async () => vi.advanceTimersByTimeAsync(1250));
+    fireEvent.keyDown(window, { key: String(targetNumber()) });
+    expect(screen.getByTestId("feedback-copy").textContent).toBe("COUNTERED");
   });
 
   it("persists the sound toggle", () => {

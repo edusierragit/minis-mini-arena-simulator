@@ -5,6 +5,12 @@ import { ClassSelector } from "./components/ClassSelector";
 import { KeybindConfigurator } from "./components/KeybindConfigurator";
 import { PracticeSession } from "./components/PracticeSession";
 import { loadAppState, saveAppState } from "./storage/appStorage";
+import {
+  getBrowserReservedShortcuts,
+  releaseBrowserShortcutLock,
+  requestBrowserShortcutLock,
+} from "./game/browserShortcutLock";
+import type { BrowserShortcutLockStatus } from "./game/browserShortcutLock";
 import type { Bindings, PracticeSettings } from "./types";
 
 type Screen = "classes" | "bindings" | "practice";
@@ -17,6 +23,7 @@ export default function App() {
   const [enabledSpellsByClass, setEnabledSpellsByClass] = useState<Record<string, string[]>>(initial.enabledSpellsByClass);
   const [settings, setSettings] = useState<PracticeSettings>(initial.settings);
   const [screen, setScreen] = useState<Screen>(initialClass?.playable ? "bindings" : "classes");
+  const [shortcutLockStatus, setShortcutLockStatus] = useState<BrowserShortcutLockStatus>("off");
 
   const selectedClass = selectedClassId ? getClassDefinition(selectedClassId) : undefined;
   const bindings = selectedClassId ? bindingsByClass[selectedClassId] ?? {} : {};
@@ -49,12 +56,30 @@ export default function App() {
   };
 
   const changeClass = () => {
+    void releaseBrowserShortcutLock();
+    setShortcutLockStatus("off");
     setSelectedClassId(null);
     setScreen("classes");
   };
 
+  const changeBinds = () => {
+    void releaseBrowserShortcutLock();
+    setShortcutLockStatus("off");
+    setScreen("bindings");
+  };
+
   const startPractice = () => {
     if (!selectedClassId) return;
+    const activeBindings = Object.entries(bindings)
+      .filter(([key]) => enabledSpellIds.includes(key.split(":")[0]))
+      .map(([, binding]) => binding);
+    const reservedShortcuts = getBrowserReservedShortcuts(activeBindings);
+    if (reservedShortcuts.length > 0) {
+      setShortcutLockStatus("requesting");
+      void requestBrowserShortcutLock().then(setShortcutLockStatus);
+    } else {
+      setShortcutLockStatus("off");
+    }
     trackAnalyticsEvent("practice-started", {
       class: selectedClassId,
       difficulty: settings.difficulty,
@@ -74,8 +99,9 @@ export default function App() {
         bindings={bindings}
         enabledSpellIds={enabledSpellIds}
         settings={settings}
+        shortcutLockStatus={shortcutLockStatus}
         onSettingsChange={setSettings}
-        onChangeBinds={() => setScreen("bindings")}
+        onChangeBinds={changeBinds}
         onChangeClass={changeClass}
       />
     );

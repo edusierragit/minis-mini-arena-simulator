@@ -12,6 +12,12 @@ export interface SpellDefinition {
   suggestedBindings?: Partial<Record<TargetId, string>>;
   enabledByDefault?: boolean;
   dispels?: DispelType[];
+  macroSteps?: string[];
+  counterplay?: {
+    cueIds: string[];
+    castDurationMs: number;
+    successWindowMs: number;
+  };
 }
 
 export interface ClassDefinition {
@@ -33,6 +39,10 @@ export interface Challenge {
   target: TargetId;
   targetMode: TargetMode;
   cueId: string | null;
+  counterplay: {
+    castDurationMs: number;
+    successWindowMs: number;
+  } | null;
   startedAt: number;
   elapsedMs: number;
 }

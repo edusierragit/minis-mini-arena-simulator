@@ -63,5 +63,19 @@ export const priest: ClassDefinition = {
       suggestedBindings: { arena1: "Q", arena2: "W", arena3: "E" },
       enabledByDefault: false,
     },
+    {
+      id: "shadow-word-death",
+      name: "Shadow Word: Death",
+      icon: "icons/priest/shadow-word-death.jpg",
+      targetMode: "arena",
+      description: "Time the backlash near the end of an incoming CC cast.",
+      suggestedBindings: { arena1: "1", arena2: "2", arena3: "3" },
+      enabledByDefault: false,
+      counterplay: {
+        cueIds: ["polymorph", "fear"],
+        castDurationMs: 1500,
+        successWindowMs: 300,
+      },
+    },
   ],
 };

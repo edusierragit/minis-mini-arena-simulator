@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeAnalyticsPayload } from "../functions/_analytics";
 import { onRequestPost } from "../functions/api/analytics";
+import { onRequestGet } from "../functions/api/stats";
 import type { AnalyticsEnv, D1PreparedStatement } from "../functions/_types";
 
 function requestFor(body: unknown, headers: Record<string, string> = {}) {
@@ -31,6 +32,12 @@ describe("Cloudflare analytics payload validation", () => {
       referrer: "",
       source: "",
       campaign: "",
+      browser: "other",
+      operatingSystem: "other",
+      device: "desktop",
+      language: "other",
+      viewport: "standard",
+      visitType: "unknown",
     });
   });
 
@@ -42,6 +49,12 @@ describe("Cloudflare analytics payload validation", () => {
         source: "WhatsApp Group",
         campaign: "Launch #1",
         class: "rogue",
+        browser: "Brave",
+        os: "Windows",
+        device: "Desktop",
+        language: "es",
+        viewport: "Wide",
+        visitType: "First",
       },
     }, "invalid-country")).toEqual({
       event: "site-opened",
@@ -52,6 +65,12 @@ describe("Cloudflare analytics payload validation", () => {
       referrer: "web.whatsapp.com",
       source: "whatsapp-group",
       campaign: "launch-1",
+      browser: "brave",
+      operatingSystem: "windows",
+      device: "desktop",
+      language: "es",
+      viewport: "wide",
+      visitType: "first",
     });
   });
 
@@ -81,6 +100,48 @@ describe("Cloudflare analytics payload validation", () => {
     expect(boundValues.slice(1)).toEqual(["practice-started", "mage", "fast", 30, "XX", "", "", ""]);
   });
 
+  it("stores only broad client classifications for site opens", async () => {
+    const writes: Array<Array<string | number | null>> = [];
+    const env: AnalyticsEnv = {
+      ANALYTICS_DB: {
+        prepare: () => {
+          let values: Array<string | number | null> = [];
+          const statement: D1PreparedStatement = {
+            bind: (...nextValues) => {
+              values = nextValues;
+              return statement;
+            },
+            run: async () => {
+              writes.push(values);
+              return { results: [], success: true };
+            },
+            all: async () => ({ results: [], success: true }),
+          };
+          return statement;
+        },
+      },
+    };
+
+    const response = await onRequestPost({
+      request: requestFor({
+        event: "site-opened",
+        dimensions: {
+          browser: "brave",
+          os: "windows",
+          device: "desktop",
+          language: "es",
+          viewport: "wide",
+          visitType: "returning",
+        },
+      }),
+      env,
+    });
+
+    expect(response.status).toBe(204);
+    expect(writes).toHaveLength(2);
+    expect(writes[1].slice(1)).toEqual(["brave", "windows", "desktop", "es", "wide", "returning"]);
+  });
+
   it("counts anonymous aggregate usage even when DNT is enabled", async () => {
     let prepared = false;
     const statement: D1PreparedStatement = {
@@ -105,5 +166,37 @@ describe("Cloudflare analytics payload validation", () => {
     expect(response.status).toBe(204);
     expect(response.headers.get("X-Analytics-Skipped")).toBeNull();
     expect(prepared).toBe(true);
+  });
+
+  it("keeps the all-time dashboard available before the optional client migration", async () => {
+    const env: AnalyticsEnv = {
+      ANALYTICS_ADMIN_TOKEN: "test-token",
+      ANALYTICS_DB: {
+        prepare: (query) => {
+          const statement: D1PreparedStatement = {
+            bind: () => statement,
+            run: async () => ({ results: [], success: true }),
+            all: async () => {
+              if (query.includes("analytics_client_daily")) throw new Error("no such table");
+              return { results: [], success: true };
+            },
+          };
+          return statement;
+        },
+      },
+    };
+
+    const response = await onRequestGet({
+      request: new Request("https://arena.pages.dev/api/stats", {
+        headers: { Authorization: "Bearer test-token" },
+      }),
+      env,
+    });
+    const body = await response.json() as Record<string, unknown>;
+
+    expect(response.status).toBe(200);
+    expect(body.window).toBe("all-time");
+    expect(body.browsers).toEqual([]);
+    expect(body.visitTypes).toEqual([]);
   });
 });
