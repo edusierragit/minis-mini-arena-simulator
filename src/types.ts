@@ -8,15 +8,17 @@ export interface SpellDefinition {
   name: string;
   icon: string;
   targetMode: TargetMode;
+  targetIds?: TargetId[];
   description?: string;
   suggestedBindings?: Partial<Record<TargetId, string>>;
   enabledByDefault?: boolean;
   dispels?: DispelType[];
   macroSteps?: string[];
+  macroIcons?: string[];
   counterplay?: {
     cueIds: string[];
     castDurationMs: number;
-    successWindowMs: number;
+    bonusWindowMs: number;
   };
 }
 
@@ -41,7 +43,7 @@ export interface Challenge {
   cueId: string | null;
   counterplay: {
     castDurationMs: number;
-    successWindowMs: number;
+    bonusWindowMs: number;
   } | null;
   startedAt: number;
   elapsedMs: number;
@@ -55,6 +57,7 @@ export interface PracticeResult {
   reactionMs: number | null;
   pressedBind: string | null;
   expectedBind: string;
+  timingBonus?: number;
 }
 
 export type DifficultyId = "slow" | "normal" | "fast";

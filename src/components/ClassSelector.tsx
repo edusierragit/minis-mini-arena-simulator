@@ -10,7 +10,10 @@ export function ClassSelector({ onSelect }: ClassSelectorProps) {
     <main className="screen class-screen">
       <div className="title-block">
         <p className="eyebrow">WOTLK ARENA WARM-UP</p>
-        <h1>Mini&apos;s Mini<br /><span>Arena Simulator</span></h1>
+        <div className="title-lockup">
+          <h1>Mini&apos;s Mini<br /><span>Arena Simulator</span></h1>
+          <span className="beta-badge">BETA</span>
+        </div>
         <p className="subtitle">Train the bind. Hit the target. Queue sharper.</p>
       </div>
 

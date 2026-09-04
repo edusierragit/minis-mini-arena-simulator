@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../src/App";
 import { mage } from "../src/classes/mage";
+import { rogue } from "../src/classes/rogue";
 import { GladiusPanel } from "../src/components/GladiusPanel";
 import { createOpponentTeam } from "../src/data/opponents";
 import type { ArenaTarget } from "../src/types";
@@ -67,6 +68,7 @@ describe("complete app flow", () => {
     });
     expect((screen.getByTestId("warrior-class-card") as HTMLButtonElement).disabled).toBe(true);
     expect(within(screen.getByTestId("death-knight-class-card")).getByText("COMING NEVER")).not.toBeNull();
+    expect(screen.getByText("BETA")).not.toBeNull();
     expect(screen.getByRole("link", { name: "Eduardo Sierra" }).getAttribute("href")).toBe(
       "https://x.com/eduardo39657119",
     );
@@ -87,9 +89,14 @@ describe("complete app flow", () => {
     expect(screen.getByTestId("toggle-shadowstep-kick").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("bind-shadowstep-blind-2").textContent).toContain("Ctrl+Alt+2");
     expect(screen.getByText("SHADOWSTEP → CHEAP SHOT")).not.toBeNull();
+    expect(screen.getByLabelText("Shadowstep then Kick macro").querySelectorAll("img")).toHaveLength(2);
     expect(screen.getByTestId("toggle-garrote").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("toggle-tricks-of-the-trade").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.queryByTestId("bind-tricks-of-the-trade-1")).toBeNull();
+    expect(screen.getByTestId("bind-tricks-of-the-trade-2").textContent).toContain("Shift+F1");
     expect(screen.queryByRole("heading", { name: "Ambush" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Eviscerate" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Deadly Throw" })).toBeNull();
     expect(screen.queryByText("Duplicate bind")).toBeNull();
     expect((screen.getByTestId("start-practice") as HTMLButtonElement).disabled).toBe(false);
   });
@@ -111,8 +118,25 @@ describe("complete app flow", () => {
     expect(screen.queryByRole("heading", { name: "Ambush" })).toBeNull();
 
     const saved = JSON.parse(localStorage.getItem("minis-mini-arena-simulator:v1") ?? "{}");
-    expect(saved.contentVersion).toBe(2);
+    expect(saved.contentVersion).toBe(3);
     expect(saved.bindingsByClass.rogue["ambush:arena1"]).toBeUndefined();
+  });
+
+  it("removes Deadly Throw without re-enabling macros a player disabled", () => {
+    localStorage.setItem("minis-mini-arena-simulator:v1", JSON.stringify({
+      contentVersion: 2,
+      selectedClassId: "rogue",
+      bindingsByClass: { rogue: { "kick:arena1": "Ctrl+1", "deadly-throw:arena1": "Shift+1" } },
+      enabledSpellsByClass: { rogue: ["kick"] },
+      settings: { difficulty: "normal", sessionLength: 30, muted: false },
+    }));
+
+    render(<App />);
+
+    expect(screen.getByTestId("toggle-shadowstep-kick").getAttribute("aria-pressed")).toBe("false");
+    const saved = JSON.parse(localStorage.getItem("minis-mini-arena-simulator:v1") ?? "{}");
+    expect(saved.contentVersion).toBe(3);
+    expect(saved.bindingsByClass.rogue["deadly-throw:arena1"]).toBeUndefined();
   });
 
   it("never mixes another class's spells into Mage, even with contaminated saved state", () => {
@@ -260,7 +284,7 @@ describe("complete app flow", () => {
     expect(screen.getByTestId("feedback-copy").textContent).toBe("CORRECT");
   });
 
-  it("requires Shadow Word: Death inside the final counter-cast window", async () => {
+  it("shows Shadow Word: Death inside Gladius and rewards later timing", async () => {
     vi.useFakeTimers();
     render(<App />);
     fireEvent.click(screen.getByTestId("priest-class-card"));
@@ -276,13 +300,23 @@ describe("complete app flow", () => {
       return Number(labels[labels.length - 1]?.textContent?.match(/[123]/)?.[0]);
     };
 
-    fireEvent.keyDown(window, { key: String(targetNumber()) });
-    expect(screen.getByTestId("feedback-copy").textContent).toMatch(/TOO EARLY/);
+    expect(document.querySelector(".challenge-callout span")?.textContent).toBe("CAST");
+    const firstTarget = screen.getByTestId(`arena-frame-${targetNumber()}`);
+    expect(within(firstTarget).getByTestId("incoming-cast")).not.toBeNull();
+    expect(document.querySelector(".counter-cast")).toBeNull();
 
-    await act(async () => vi.advanceTimersByTimeAsync(700));
+    fireEvent.keyDown(window, { key: String(targetNumber()) });
+    expect(screen.getByTestId("feedback-copy").textContent).toMatch(/CORRECT .* LATER = MORE/);
+    const earlyScore = Number(within(screen.getByRole("region", { name: "Practice statistics" }))
+      .getByText("Score").nextElementSibling?.textContent);
+
+    await act(async () => vi.advanceTimersByTimeAsync(400));
     await act(async () => vi.advanceTimersByTimeAsync(1250));
     fireEvent.keyDown(window, { key: String(targetNumber()) });
-    expect(screen.getByTestId("feedback-copy").textContent).toBe("COUNTERED");
+    expect(screen.getByTestId("feedback-copy").textContent).toMatch(/PERFECT TIMING/);
+    const lateScore = Number(within(screen.getByRole("region", { name: "Practice statistics" }))
+      .getByText("Score").nextElementSibling?.textContent);
+    expect(lateScore - earlyScore).toBeGreaterThanOrEqual(180);
   });
 
   it("persists the sound toggle", () => {
@@ -381,5 +415,14 @@ describe("complete app flow", () => {
       const targetFrame = screen.getByTestId(`arena-frame-${target}`);
       expect(within(targetFrame).getByTestId("active-challenge-icon")).not.toBeNull();
     });
+  });
+
+  it("shows both spell icons for a Shadowstep macro challenge", () => {
+    const macro = rogue.spells.find((spell) => spell.id === "shadowstep-kick")!;
+    const view = render(<GladiusPanel opponents={createOpponentTeam()} target={2} spell={macro} feedback={null} />);
+
+    expect(within(screen.getByTestId("arena-frame-2")).getByTestId("active-challenge-icon")
+      .querySelectorAll("img")).toHaveLength(2);
+    view.unmount();
   });
 });

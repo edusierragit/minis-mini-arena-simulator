@@ -75,6 +75,18 @@ export const onRequestPost: PagesHandler<AnalyticsEnv> = async ({ request, env }
         // migration is being applied.
         console.warn("Unable to record anonymous client classification", classificationError);
       }
+
+      try {
+        await env.ANALYTICS_DB.prepare(`
+          INSERT INTO analytics_navigation_daily (navigation_type, day, count)
+          VALUES (?, ?, 1)
+          ON CONFLICT (navigation_type, day)
+          DO UPDATE SET count = count + 1
+        `).bind(record.navigationType, day).run();
+      } catch (navigationError) {
+        // Page totals keep working until the optional navigation migration exists.
+        console.warn("Unable to record navigation classification", navigationError);
+      }
     }
 
     return emptyResponse();

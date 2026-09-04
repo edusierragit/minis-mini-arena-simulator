@@ -2,8 +2,8 @@ import { DEFAULT_SETTINGS } from "../config";
 import type { Bindings, PracticeSettings } from "../types";
 
 const STORAGE_KEY = "minis-mini-arena-simulator:v1";
-const CONTENT_VERSION = 2;
-const REMOVED_ROGUE_SPELLS = new Set(["cheap-shot", "ambush", "eviscerate", "hemorrhage", "rupture"]);
+const CONTENT_VERSION = 3;
+const REMOVED_ROGUE_SPELLS = new Set(["cheap-shot", "ambush", "eviscerate", "hemorrhage", "rupture", "deadly-throw"]);
 const NEW_ROGUE_DEFAULTS = ["shadowstep-kick", "shadowstep-blind", "shadowstep-cheap-shot"];
 
 interface StoredState {
@@ -32,13 +32,14 @@ export function loadAppState(): StoredState {
     const bindingsByClass = parsed.bindingsByClass ?? {};
     const enabledSpellsByClass = parsed.enabledSpellsByClass ?? {};
 
-    if ((parsed.contentVersion ?? 1) < CONTENT_VERSION) {
+    const previousContentVersion = parsed.contentVersion ?? 1;
+    if (previousContentVersion < CONTENT_VERSION) {
       if (bindingsByClass.rogue) {
         bindingsByClass.rogue = Object.fromEntries(
           Object.entries(bindingsByClass.rogue).filter(([key]) => !REMOVED_ROGUE_SPELLS.has(key.split(":")[0])),
         );
       }
-      if (enabledSpellsByClass.rogue) {
+      if (previousContentVersion < 2 && enabledSpellsByClass.rogue) {
         enabledSpellsByClass.rogue = [
           ...enabledSpellsByClass.rogue.filter((id) => !REMOVED_ROGUE_SPELLS.has(id)),
           ...NEW_ROGUE_DEFAULTS.filter((id) => !enabledSpellsByClass.rogue.includes(id)),

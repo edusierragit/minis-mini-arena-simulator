@@ -51,6 +51,20 @@ async function clientBreakdowns(db: D1Database) {
   }
 }
 
+async function navigationBreakdown(db: D1Database) {
+  try {
+    const result = await db.prepare(`
+      SELECT navigation_type AS value, SUM(count) AS count
+      FROM analytics_navigation_daily
+      GROUP BY navigation_type
+      ORDER BY count DESC
+    `).all<CountRow>();
+    return result.results;
+  } catch {
+    return [];
+  }
+}
+
 export const onRequestGet: PagesHandler<AnalyticsEnv> = async ({ request, env }) => {
   if (!env.ANALYTICS_DB || !env.ANALYTICS_ADMIN_TOKEN) {
     return jsonResponse({ error: "Stats dashboard is not configured" }, 503);
@@ -77,7 +91,7 @@ export const onRequestGet: PagesHandler<AnalyticsEnv> = async ({ request, env })
       ORDER BY day ASC, event ASC
     `).all<DailyRow>();
 
-    const [totals, classes, difficulties, rounds, countries, referrers, sources, campaigns, clients] = await Promise.all([
+    const [totals, classes, difficulties, rounds, countries, referrers, sources, campaigns, clients, navigationTypes] = await Promise.all([
       groupedCounts(db, "event"),
       groupedCounts(db, "class_id", "class_id != '' AND event = 'class-selected'"),
       groupedCounts(db, "difficulty", "difficulty != '' AND event = 'practice-started'"),
@@ -87,6 +101,7 @@ export const onRequestGet: PagesHandler<AnalyticsEnv> = async ({ request, env })
       groupedCounts(db, "source", "source != ''"),
       groupedCounts(db, "campaign", "campaign != ''"),
       clientBreakdowns(db),
+      navigationBreakdown(db),
     ]);
 
     return jsonResponse({
@@ -101,6 +116,7 @@ export const onRequestGet: PagesHandler<AnalyticsEnv> = async ({ request, env })
       referrers,
       sources,
       campaigns,
+      navigationTypes,
       ...clients,
     });
   } catch (error) {

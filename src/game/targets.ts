@@ -1,4 +1,4 @@
-import type { ArenaTarget, TargetId, TargetMode } from "../types";
+import type { ArenaTarget, SpellDefinition, TargetId, TargetMode } from "../types";
 
 export interface TrainingTargetDefinition {
   id: TargetId;
@@ -22,6 +22,13 @@ export const ALLY_TARGETS: TrainingTargetDefinition[] = [
 
 export function getTargetsForMode(mode: TargetMode): TrainingTargetDefinition[] {
   return mode === "arena" ? ARENA_TARGETS : ALLY_TARGETS;
+}
+
+export function getTargetsForSpell(
+  spell: Pick<SpellDefinition, "targetMode" | "targetIds">,
+): TrainingTargetDefinition[] {
+  const targets = getTargetsForMode(spell.targetMode);
+  return spell.targetIds ? targets.filter((target) => spell.targetIds?.includes(target.id)) : targets;
 }
 
 export function getTargetDefinition(targetId: TargetId): TrainingTargetDefinition {

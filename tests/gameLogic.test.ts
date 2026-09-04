@@ -8,7 +8,7 @@ import { shaman } from "../src/classes/shaman";
 import { getDebuffDefinition } from "../src/data/debuffs";
 import { generateChallenge, getConfiguredChallenges } from "../src/game/challengeGenerator";
 import { bindingKey, getDuplicateBindings, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../src/game/keybindUtils";
-import { calculateStats } from "../src/game/scoring";
+import { calculateLateTimingBonus, calculateStats } from "../src/game/scoring";
 import {
   getBrowserReservedShortcuts,
   isBrowserReservedShortcut,
@@ -161,7 +161,7 @@ describe("generic challenge generation", () => {
       spellId: "shadow-word-death",
       target: "arena2",
       targetMode: "arena",
-      counterplay: { castDurationMs: 1500, successWindowMs: 300 },
+      counterplay: { castDurationMs: 1500, bonusWindowMs: 300 },
     });
     expect(["polymorph", "fear"]).toContain(challenge.cueId);
   });
@@ -172,6 +172,7 @@ describe("generic challenge generation", () => {
       name: "Shadowstep + Kick",
       targetMode: "arena",
       macroSteps: ["Shadowstep", "Kick"],
+      macroIcons: ["icons/rogue/shadowstep.jpg", "icons/rogue/kick.jpg"],
     });
     expect(getConfiguredChallenges(
       rogue,
@@ -179,9 +180,30 @@ describe("generic challenge generation", () => {
       ["shadowstep-kick"],
     )).toEqual([{ spellId: "shadowstep-kick", target: "arena3", targetMode: "arena" }]);
   });
+
+  it("allows Tricks of the Trade on party members but never on self or enemies", () => {
+    const challenges = getConfiguredChallenges(
+      rogue,
+      {
+        [bindingKey("tricks-of-the-trade", "player")]: "F1",
+        [bindingKey("tricks-of-the-trade", "party1")]: "F2",
+        [bindingKey("tricks-of-the-trade", "arena1")]: "F3",
+      },
+      ["tricks-of-the-trade"],
+    );
+
+    expect(challenges).toEqual([{ spellId: "tricks-of-the-trade", target: "party1", targetMode: "ally" }]);
+  });
 });
 
 describe("session scoring", () => {
+  it("increases the Shadow Word: Death timing bonus toward cast completion", () => {
+    expect(calculateLateTimingBonus(0, 1500)).toBe(0);
+    expect(calculateLateTimingBonus(750, 1500)).toBe(50);
+    expect(calculateLateTimingBonus(1350, 1500)).toBe(90);
+    expect(calculateLateTimingBonus(2000, 1500)).toBe(100);
+  });
+
   it("counts outcomes, streaks, accuracy, reaction time, and score", () => {
     const result = (kind: PracticeResult["kind"], reactionMs: number | null): PracticeResult => ({
       challenge: { spellId: "polymorph", target: "arena1", targetMode: "arena" },

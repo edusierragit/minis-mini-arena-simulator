@@ -38,6 +38,7 @@ describe("Cloudflare analytics payload validation", () => {
       language: "other",
       viewport: "standard",
       visitType: "unknown",
+      navigationType: "unknown",
     });
   });
 
@@ -55,6 +56,7 @@ describe("Cloudflare analytics payload validation", () => {
         language: "es",
         viewport: "Wide",
         visitType: "First",
+        navigationType: "Reload",
       },
     }, "invalid-country")).toEqual({
       event: "site-opened",
@@ -71,6 +73,7 @@ describe("Cloudflare analytics payload validation", () => {
       language: "es",
       viewport: "wide",
       visitType: "first",
+      navigationType: "reload",
     });
   });
 
@@ -138,8 +141,9 @@ describe("Cloudflare analytics payload validation", () => {
     });
 
     expect(response.status).toBe(204);
-    expect(writes).toHaveLength(2);
+    expect(writes).toHaveLength(3);
     expect(writes[1].slice(1)).toEqual(["brave", "windows", "desktop", "es", "wide", "returning"]);
+    expect(writes[2][0]).toBe("unknown");
   });
 
   it("counts anonymous aggregate usage even when DNT is enabled", async () => {
@@ -198,5 +202,6 @@ describe("Cloudflare analytics payload validation", () => {
     expect(body.window).toBe("all-time");
     expect(body.browsers).toEqual([]);
     expect(body.visitTypes).toEqual([]);
+    expect(body.navigationTypes).toEqual([]);
   });
 });

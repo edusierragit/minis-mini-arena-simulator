@@ -15,6 +15,7 @@ The following aggregate activity can be counted:
 - broad browser, operating-system and device categories;
 - two-letter browser language and coarse viewport size;
 - whether that browser has opened the trainer before, without sending a visitor ID.
+- whether a page load was a fresh navigation, reload, or browser back/forward action.
 
 The game does **not** send or store configured keys or mouse buttons, IP addresses, player names, answers, scores, reaction times, raw user-agent strings, persistent visitor identifiers, or local storage contents. The first-party database stores counters per day and broad category combination rather than individual event records.
 

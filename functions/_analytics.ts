@@ -13,6 +13,7 @@ const OPERATING_SYSTEMS = new Set(["windows", "macos", "linux", "chromeos", "and
 const DEVICES = new Set(["desktop", "tablet", "mobile"]);
 const VIEWPORTS = new Set(["compact", "standard", "wide"]);
 const VISIT_TYPES = new Set(["first", "returning", "unknown"]);
+const NAVIGATION_TYPES = new Set(["navigate", "reload", "back-forward", "unknown"]);
 
 export type AnalyticsEventName = typeof EVENT_NAMES[number];
 
@@ -31,6 +32,7 @@ export interface AnalyticsRecord {
   language: string;
   viewport: string;
   visitType: string;
+  navigationType: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -75,6 +77,7 @@ export function normalizeAnalyticsPayload(payload: unknown, country?: unknown): 
   const languageCandidate = normalizedToken(dimensions.language, 8);
   const viewportCandidate = normalizedToken(dimensions.viewport, 16);
   const visitTypeCandidate = normalizedToken(dimensions.visitType, 16);
+  const navigationTypeCandidate = normalizedToken(dimensions.navigationType, 16);
 
   return {
     event,
@@ -93,5 +96,6 @@ export function normalizeAnalyticsPayload(payload: unknown, country?: unknown): 
     language: acceptsAcquisition && /^[a-z]{2}$/.test(languageCandidate) ? languageCandidate : "other",
     viewport: acceptsAcquisition && VIEWPORTS.has(viewportCandidate) ? viewportCandidate : "standard",
     visitType: acceptsAcquisition && VISIT_TYPES.has(visitTypeCandidate) ? visitTypeCandidate : "unknown",
+    navigationType: acceptsAcquisition && NAVIGATION_TYPES.has(navigationTypeCandidate) ? navigationTypeCandidate : "unknown",
   };
 }

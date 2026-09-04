@@ -11,6 +11,12 @@ export interface PracticeStats {
   bestStreak: number;
 }
 
+export function calculateLateTimingBonus(elapsedMs: number, durationMs: number): number {
+  if (durationMs <= 0) return 0;
+  const progress = Math.min(1, Math.max(0, elapsedMs / durationMs));
+  return Math.round(progress * 100);
+}
+
 export function calculateStats(results: PracticeResult[], reactionWindowMs: number): PracticeStats {
   let currentStreak = 0;
   let bestStreak = 0;
@@ -21,7 +27,7 @@ export function calculateStats(results: PracticeResult[], reactionWindowMs: numb
       currentStreak += 1;
       bestStreak = Math.max(bestStreak, currentStreak);
       const speedBonus = Math.max(0, Math.round((reactionWindowMs - (result.reactionMs ?? reactionWindowMs)) / 20));
-      score += 100 + speedBonus;
+      score += 100 + (result.timingBonus ?? speedBonus);
     } else {
       currentStreak = 0;
     }

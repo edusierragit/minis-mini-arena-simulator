@@ -20,7 +20,7 @@ The game will load immediately. The analytics endpoint returns `503` until its d
 
 1. In Cloudflare, open **Storage & Databases → D1 SQL database → Create**.
 2. Name it `minis-mini-arena-analytics`.
-3. Open its SQL console and execute `migrations/0001_analytics.sql`, followed by `migrations/0002_client_breakdowns.sql`, from this repository.
+3. Open its SQL console and execute `migrations/0001_analytics.sql`, followed by `migrations/0002_client_breakdowns.sql` and `migrations/0003_navigation_breakdown.sql`, from this repository.
 4. Return to the Pages project and open **Settings → Bindings → Add → D1 database**.
 5. Set the variable name to exactly `ANALYTICS_DB` and select the database.
 

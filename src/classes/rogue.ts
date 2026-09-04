@@ -62,6 +62,7 @@ export const rogue: ClassDefinition = {
       suggestedBindings: { arena1: "Ctrl+Shift+1", arena2: "Ctrl+Shift+2", arena3: "Ctrl+Shift+3" },
       enabledByDefault: true,
       macroSteps: ["Shadowstep", "Kick"],
+      macroIcons: ["icons/rogue/shadowstep.jpg", "icons/rogue/kick.jpg"],
     },
     {
       id: "shadowstep-blind",
@@ -72,6 +73,7 @@ export const rogue: ClassDefinition = {
       suggestedBindings: { arena1: "Ctrl+Alt+1", arena2: "Ctrl+Alt+2", arena3: "Ctrl+Alt+3" },
       enabledByDefault: true,
       macroSteps: ["Shadowstep", "Blind"],
+      macroIcons: ["icons/rogue/shadowstep.jpg", "icons/rogue/blind.jpg"],
     },
     {
       id: "shadowstep-cheap-shot",
@@ -82,6 +84,7 @@ export const rogue: ClassDefinition = {
       suggestedBindings: { arena1: "Ctrl+Alt+Shift+1", arena2: "Ctrl+Alt+Shift+2", arena3: "Ctrl+Alt+Shift+3" },
       enabledByDefault: true,
       macroSteps: ["Shadowstep", "Cheap Shot"],
+      macroIcons: ["icons/rogue/shadowstep.jpg", "icons/rogue/cheap-shot.jpg"],
     },
     {
       id: "gouge",
@@ -120,12 +123,13 @@ export const rogue: ClassDefinition = {
       enabledByDefault: false,
     },
     {
-      id: "deadly-throw",
-      name: "Deadly Throw",
-      icon: "icons/rogue/deadly-throw.jpg",
-      targetMode: "arena",
-      description: "Use Deadly Throw on a specific arena enemy.",
-      suggestedBindings: { arena1: "Alt+Shift+1", arena2: "Alt+Shift+2", arena3: "Alt+Shift+3" },
+      id: "tricks-of-the-trade",
+      name: "Tricks of the Trade",
+      icon: "icons/rogue/tricks-of-the-trade.jpg",
+      targetMode: "ally",
+      targetIds: ["party1", "party2"],
+      description: "Buff a specific teammate without changing your enemy target.",
+      suggestedBindings: { party1: "Shift+F1", party2: "Shift+F2" },
       enabledByDefault: false,
     },
   ],

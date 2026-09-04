@@ -1,7 +1,7 @@
 import type { Bindings, Challenge, ClassDefinition, TargetId, TargetMode } from "../types";
 import { trainingDebuffs } from "../data/debuffs";
 import { bindingKey } from "./keybindUtils";
-import { getTargetsForMode } from "./targets";
+import { getTargetsForSpell } from "./targets";
 
 interface ChallengeCandidate {
   spellId: string;
@@ -18,7 +18,7 @@ export function getConfiguredChallenges(
   return classDefinition.spells.flatMap((spell) =>
     enabled && !enabled.has(spell.id)
       ? []
-      : getTargetsForMode(spell.targetMode)
+      : getTargetsForSpell(spell)
         .filter((target) => Boolean(bindings[bindingKey(spell.id, target.id)]))
         .map((target) => ({ spellId: spell.id, target: target.id, targetMode: spell.targetMode })),
   );
@@ -57,7 +57,7 @@ export function generateChallenge(
     counterplay: spell?.counterplay
       ? {
           castDurationMs: spell.counterplay.castDurationMs,
-          successWindowMs: spell.counterplay.successWindowMs,
+          bonusWindowMs: spell.counterplay.bonusWindowMs,
         }
       : null,
     startedAt: performance.now(),

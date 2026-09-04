@@ -42,7 +42,7 @@ describe("anonymous analytics", () => {
     script?.dispatchEvent(new Event("load"));
 
     expect(count).toHaveBeenNthCalledWith(1, {
-      path: "event/site-opened/browser-other/device-desktop/language-en/os-other/referrer-direct/viewport-standard/visittype-first",
+      path: "event/site-opened/browser-other/device-desktop/language-en/navigationtype-unknown/os-other/referrer-direct/viewport-standard/visittype-first",
       title: "Site Opened",
       event: true,
       no_session: true,
@@ -77,6 +77,7 @@ describe("anonymous analytics", () => {
         language: "en",
         viewport: "standard",
         visitType: "first",
+        navigationType: "unknown",
       },
     });
     expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({

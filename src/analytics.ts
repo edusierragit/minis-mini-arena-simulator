@@ -101,6 +101,15 @@ function visitType(): string {
   }
 }
 
+function navigationType(): string {
+  if (typeof performance.getEntriesByType !== "function") return "unknown";
+  const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+  if (navigation?.type === "reload") return "reload";
+  if (navigation?.type === "back_forward") return "back-forward";
+  if (navigation?.type === "navigate") return "navigate";
+  return "unknown";
+}
+
 function pageOpenDimensions(): AnalyticsDimensions {
   const params = new URLSearchParams(window.location.search);
   let referrer = "direct";
@@ -123,6 +132,7 @@ function pageOpenDimensions(): AnalyticsDimensions {
     language: language && /^[a-z]{2}$/.test(language) ? language : "other",
     viewport,
     visitType: visitType(),
+    navigationType: navigationType(),
   };
   const source = params.get("utm_source");
   const campaign = params.get("utm_campaign");

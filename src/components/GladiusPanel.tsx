@@ -5,11 +5,18 @@ import { ArenaFrame } from "./ArenaFrame";
 interface GladiusPanelProps {
   opponents: ArenaOpponent[];
   target: ArenaTarget | null;
-  spell: Pick<SpellDefinition, "name" | "icon"> | null;
+  spell: Pick<SpellDefinition, "name" | "icon" | "macroIcons"> | null;
+  incomingCast?: {
+    name: string;
+    icon: string;
+    progress: number;
+    timingBonus: number;
+    isBonusWindow: boolean;
+  } | null;
   feedback: ResultKind | null;
 }
 
-export function GladiusPanel({ opponents, target, spell, feedback }: GladiusPanelProps) {
+export function GladiusPanel({ opponents, target, spell, incomingCast = null, feedback }: GladiusPanelProps) {
   return (
     <section className="gladius-shell" aria-label="Enemy arena frames">
       <div className="gladius-titlebar">
@@ -26,6 +33,7 @@ export function GladiusPanel({ opponents, target, spell, feedback }: GladiusPane
               target={frameTarget}
               opponent={opponent}
               activeSpell={isTarget ? spell : null}
+              incomingCast={isTarget ? incomingCast : null}
               feedback={isTarget ? feedback : null}
             />
           );

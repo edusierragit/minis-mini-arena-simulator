@@ -29,6 +29,7 @@ interface AnalyticsSummary {
   languages: CountRow[];
   viewports: CountRow[];
   visitTypes: CountRow[];
+  navigationTypes: CountRow[];
 }
 
 const TOKEN_STORAGE_KEY = "minis-mini-arena-simulator:stats-token";
@@ -61,6 +62,10 @@ function forgetRememberedToken() {
 
 function totalFor(summary: AnalyticsSummary, event: string): number {
   return summary.totals.find((row) => row.value === event)?.count ?? 0;
+}
+
+function breakdownTotal(rows: CountRow[], value: string): number {
+  return rows.find((row) => row.value === value)?.count ?? 0;
 }
 
 function percentage(part: number, total: number): string {
@@ -155,6 +160,8 @@ export function AnalyticsDashboard() {
           <>
             <div className="analytics-totals" aria-label="Usage totals">
               <div><span>Page opens</span><strong>{totalFor(summary, "site-opened").toLocaleString()}</strong></div>
+              <div><span>Fresh loads</span><strong>{breakdownTotal(summary.navigationTypes, "navigate").toLocaleString()}</strong></div>
+              <div><span>Reloads</span><strong>{breakdownTotal(summary.navigationTypes, "reload").toLocaleString()}</strong></div>
               <div><span>Class selections</span><strong>{totalFor(summary, "class-selected").toLocaleString()}</strong></div>
               <div><span>Practices started</span><strong>{totalFor(summary, "practice-started").toLocaleString()}</strong></div>
               <div><span>Sessions completed</span><strong>{totalFor(summary, "session-completed").toLocaleString()}</strong></div>
@@ -182,7 +189,9 @@ export function AnalyticsDashboard() {
               <Breakdown title="Languages" rows={summary.languages} />
               <Breakdown title="Viewport" rows={summary.viewports} />
               <Breakdown title="Visit type" rows={summary.visitTypes} />
+              <Breakdown title="Page load type" rows={summary.navigationTypes} />
             </div>
+            <p className="analytics-section-note">Page load types start with this beta update and do not backfill earlier opens.</p>
 
             <section className="stats-breakdown daily-breakdown">
               <h2>Daily activity</h2>

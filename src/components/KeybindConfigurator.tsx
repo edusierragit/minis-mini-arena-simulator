@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DIFFICULTIES, SESSION_LENGTHS } from "../config";
 import { bindingKey, getDuplicateBindings, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../game/keybindUtils";
-import { getTargetDefinition, getTargetsForMode } from "../game/targets";
+import { getTargetDefinition, getTargetsForSpell } from "../game/targets";
 import { getBrowserReservedShortcuts } from "../game/browserShortcutLock";
 import type { Bindings, ClassDefinition, PracticeSettings, TargetId } from "../types";
 import { assetUrl } from "../utils/assets";
@@ -49,14 +49,14 @@ export function KeybindConfigurator({
     () => getBrowserReservedShortcuts(Object.values(activeBindings)),
     [activeBindings],
   );
-  const totalBinds = classDefinition.spells.length * 3;
+  const totalBinds = classDefinition.spells.reduce((count, spell) => count + getTargetsForSpell(spell).length, 0);
   const configuredCount = classDefinition.spells.reduce(
-    (count, spell) => count + getTargetsForMode(spell.targetMode).filter((target) => bindings[bindingKey(spell.id, target.id)]).length,
+    (count, spell) => count + getTargetsForSpell(spell).filter((target) => bindings[bindingKey(spell.id, target.id)]).length,
     0,
   );
   const activeConfiguredCount = classDefinition.spells.reduce(
     (count, spell) => count + (enabledSet.has(spell.id)
-      ? getTargetsForMode(spell.targetMode).filter((target) => bindings[bindingKey(spell.id, target.id)]).length
+      ? getTargetsForSpell(spell).filter((target) => bindings[bindingKey(spell.id, target.id)]).length
       : 0),
     0,
   );
@@ -152,7 +152,7 @@ export function KeybindConfigurator({
   const applySuggested = () => {
     const suggested: Bindings = {};
     classDefinition.spells.forEach((spell) => {
-      getTargetsForMode(spell.targetMode).forEach((target) => {
+      getTargetsForSpell(spell).forEach((target) => {
         const bind = spell.suggestedBindings?.[target.id];
         if (bind) suggested[bindingKey(spell.id, target.id)] = bind;
       });
@@ -203,10 +203,19 @@ export function KeybindConfigurator({
       <section className="bind-list" aria-label={`${classDefinition.name} ability bindings`}>
         {classDefinition.spells.map((spell) => {
           const isEnabled = enabledSet.has(spell.id);
+          const spellTargets = getTargetsForSpell(spell);
           return (
             <article className={`spell-row ${isEnabled ? "is-enabled" : "is-disabled"}`} key={spell.id}>
               <div className="spell-identity">
-                <img className="wow-icon spell-icon" src={assetUrl(spell.icon)} alt="" />
+                {spell.macroIcons ? (
+                  <div className="macro-icon-pair" aria-label={`${spell.macroSteps?.join(" then ")} macro`}>
+                    {spell.macroIcons.map((icon, index) => (
+                      <img className="wow-icon spell-icon" src={assetUrl(icon)} alt="" key={icon} data-step={index + 1} />
+                    ))}
+                  </div>
+                ) : (
+                  <img className="wow-icon spell-icon" src={assetUrl(spell.icon)} alt="" />
+                )}
                 <div className="spell-copy">
                   <div className="spell-title-line">
                     <h2>{spell.name}</h2>
@@ -232,8 +241,8 @@ export function KeybindConfigurator({
                 </div>
               </div>
 
-              <div className="arena-bindings">
-                {getTargetsForMode(spell.targetMode).map((target) => {
+              <div className="arena-bindings" style={{ gridTemplateColumns: `repeat(${spellTargets.length}, 1fr)` }}>
+                {spellTargets.map((target) => {
                   const key = bindingKey(spell.id, target.id);
                   const value = bindings[key] ?? "";
                   const isCapturing = capturing?.spellId === spell.id && capturing.target === target.id;

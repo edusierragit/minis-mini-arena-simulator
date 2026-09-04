@@ -5,10 +5,9 @@ import { createAllyTeam, createOpponentTeam } from "../data/opponents";
 import { getDebuffDefinition } from "../data/debuffs";
 import { generateChallenge } from "../game/challengeGenerator";
 import { bindingKey, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../game/keybindUtils";
-import { calculateStats } from "../game/scoring";
+import { calculateLateTimingBonus, calculateStats } from "../game/scoring";
 import { getArenaTargetNumber, getTargetDefinition } from "../game/targets";
 import { playFeedbackSound, prepareFeedbackAudio } from "../audio/gameAudio";
-import { assetUrl } from "../utils/assets";
 import type { Bindings, Challenge, ClassDefinition, PracticeResult, PracticeSettings, ResultKind } from "../types";
 import type { BrowserShortcutLockStatus } from "../game/browserShortcutLock";
 import { GladiusPanel } from "./GladiusPanel";
@@ -30,7 +29,8 @@ interface PracticeSessionProps {
 interface FeedbackState {
   kind: ResultKind;
   expectedBind: string;
-  reason: "wrong-bind" | "too-early" | "missed" | null;
+  reason: "wrong-bind" | "missed" | null;
+  timingBonus: number | null;
 }
 
 function getChallengeDurationMs(challenge: Challenge, reactionWindowMs: number): number {
@@ -57,18 +57,20 @@ export function PracticeSession({
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [paused, setPaused] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [remainingMs, setRemainingMs] = useState(reactionWindowMs);
+  const [remainingMs, setRemainingMs] = useState(() => getChallengeDurationMs(challenge, reactionWindowMs));
   const settledRef = useRef(false);
   const practiceSurfaceRef = useRef<HTMLElement>(null);
 
   const stats = useMemo(() => calculateStats(results, reactionWindowMs), [results, reactionWindowMs]);
   const activeSpell = classDefinition.spells.find((spell) => spell.id === challenge?.spellId) ?? null;
   const activeDebuff = challenge.cueId ? getDebuffDefinition(challenge.cueId) : null;
-  const challengeVisual = activeDebuff ?? activeSpell;
+  const challengeVisual = challenge.counterplay ? activeSpell : activeDebuff ?? activeSpell;
   const challengeDurationMs = getChallengeDurationMs(challenge, reactionWindowMs);
   const counterplayWindowOpen = Boolean(
-    challenge.counterplay && remainingMs <= challenge.counterplay.successWindowMs,
+    challenge.counterplay && remainingMs <= challenge.counterplay.bonusWindowMs,
   );
+  const counterplayElapsedMs = challengeDurationMs - remainingMs;
+  const liveTimingBonus = calculateLateTimingBonus(counterplayElapsedMs, challengeDurationMs);
 
   useEffect(() => {
     prepareFeedbackAudio();
@@ -94,14 +96,12 @@ export function PracticeSession({
       Math.round(challenge.elapsedMs + performance.now() - challenge.startedAt),
     );
     const expectedBind = bindings[bindingKey(challenge.spellId, challenge.target)];
-    const pressedTooEarly = Boolean(
-      challenge.counterplay
-      && pressedBind === expectedBind
-      && durationMs - elapsed > challenge.counterplay.successWindowMs,
-    );
     const finalKind: ResultKind = kind === "missed"
       ? "missed"
-      : pressedBind === expectedBind && !pressedTooEarly ? "correct" : "incorrect";
+      : pressedBind === expectedBind ? "correct" : "incorrect";
+    const timingBonus = challenge.counterplay && finalKind === "correct"
+      ? calculateLateTimingBonus(elapsed, durationMs)
+      : undefined;
 
     setResults((previous) => [
       ...previous,
@@ -111,12 +111,14 @@ export function PracticeSession({
         reactionMs: finalKind === "missed" || challenge.counterplay ? null : elapsed,
         pressedBind,
         expectedBind,
+        timingBonus,
       },
     ]);
     setFeedback({
       kind: finalKind,
       expectedBind,
-      reason: kind === "missed" ? "missed" : pressedTooEarly ? "too-early" : finalKind === "incorrect" ? "wrong-bind" : null,
+      reason: kind === "missed" ? "missed" : finalKind === "incorrect" ? "wrong-bind" : null,
+      timingBonus: timingBonus ?? null,
     });
     playFeedbackSound(finalKind, settings.muted);
     setRemainingMs(Math.max(0, durationMs - elapsed));
@@ -277,11 +279,13 @@ export function PracticeSession({
   }
 
   const feedbackCopy = feedback?.kind === "correct"
-    ? challenge.counterplay ? "COUNTERED" : "CORRECT"
-    : feedback?.reason === "too-early"
-      ? `TOO EARLY · USE ${activeSpell?.name.toUpperCase()} NEAR CAST END · ${feedback.expectedBind}`
-      : feedback?.kind === "incorrect"
-        ? `WRONG · USE ${activeSpell?.name.toUpperCase()} · ${feedback.expectedBind}`
+    ? challenge.counterplay && feedback.timingBonus !== null
+      ? feedback.timingBonus >= 80
+        ? `PERFECT TIMING · +${100 + feedback.timingBonus}`
+        : `CORRECT · +${100 + feedback.timingBonus} · LATER = MORE`
+      : "CORRECT"
+    : feedback?.kind === "incorrect"
+      ? `WRONG · USE ${activeSpell?.name.toUpperCase()} · ${feedback.expectedBind}`
       : feedback?.kind === "missed"
         ? `MISSED · USE ${activeSpell?.name.toUpperCase()} · ${feedback.expectedBind}`
         : null;
@@ -322,34 +326,26 @@ export function PracticeSession({
             <strong data-testid="feedback-copy">{feedbackCopy}</strong>
           ) : (
             <>
-              <span>{challenge.counterplay ? "TIME" : activeDebuff ? "DISPEL" : "CAST"}</span>
+              <span>{activeDebuff && !challenge.counterplay ? "DISPEL" : "CAST"}</span>
               <strong>{challenge.counterplay ? activeSpell?.name : activeDebuff?.name ?? activeSpell?.name}</strong>
-              <i>{challenge.counterplay ? "VS" : "ON"}</i>
-              {challenge.counterplay && <b>{activeDebuff?.name?.toUpperCase()}</b>}
-              {challenge.counterplay && <i>FROM</i>}
+              <i>ON</i>
               <b>{targetDefinition.label.toUpperCase()}</b>
             </>
           )}
         </div>
-
-        {challenge.counterplay && activeDebuff && (
-          <div className={`counter-cast ${counterplayWindowOpen ? "is-open" : ""}`}>
-            <img className="wow-icon" src={assetUrl(activeDebuff.icon)} alt="" />
-            <div className="counter-cast-body">
-              <div><strong>{activeDebuff.name}</strong><span>{counterplayWindowOpen ? "DEATH NOW" : "WAIT"}</span></div>
-              <div className="counter-cast-track">
-                <i style={{ transform: `scaleX(${Math.max(0, 1 - remainingMs / challengeDurationMs)})` }} />
-              </div>
-            </div>
-            <small>{Math.ceil(remainingMs)}ms</small>
-          </div>
-        )}
 
         <div className={`combat-panels ${hasAllyTraining ? "has-party-panel" : ""}`}>
           <GladiusPanel
             opponents={opponents}
             target={arenaTarget}
             spell={challenge.targetMode === "arena" ? challengeVisual : null}
+            incomingCast={challenge.counterplay && activeDebuff ? {
+              name: activeDebuff.name,
+              icon: activeDebuff.icon,
+              progress: Math.max(0, Math.min(1, counterplayElapsedMs / challengeDurationMs)),
+              timingBonus: liveTimingBonus,
+              isBonusWindow: counterplayWindowOpen,
+            } : null}
             feedback={feedback?.kind ?? null}
           />
           {hasAllyTraining && (
