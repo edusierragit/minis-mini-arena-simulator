@@ -247,6 +247,17 @@ describe("complete app flow", () => {
     expect(screen.getByTestId("feedback-copy").textContent).toBe("CORRECT");
   });
 
+  it("keeps the native close warning active when Ctrl+W is a live bind", () => {
+    render(<App />);
+    chooseMage();
+    capture("bind-polymorph-1", { key: "w", ctrlKey: true });
+    fireEvent.click(screen.getByTestId("start-practice"));
+
+    const closeEvent = new Event("beforeunload", { cancelable: true });
+    fireEvent(window, closeEvent);
+    expect(closeEvent.defaultPrevented).toBe(true);
+  });
+
   it("keeps spells loaded while allowing the practice pool to be toggled", () => {
     const view = render(<App />);
     chooseMage();

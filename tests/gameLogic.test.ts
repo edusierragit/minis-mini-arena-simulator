@@ -10,7 +10,9 @@ import { generateChallenge, getConfiguredChallenges } from "../src/game/challeng
 import { bindingKey, getDuplicateBindings, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../src/game/keybindUtils";
 import { calculateLateTimingBonus, calculateStats } from "../src/game/scoring";
 import {
+  getBrowserReservedShortcutCodes,
   getBrowserReservedShortcuts,
+  hasBrowserCloseShortcut,
   isBrowserReservedShortcut,
   releaseBrowserShortcutLock,
   requestBrowserShortcutLock,
@@ -78,6 +80,10 @@ describe("browser shortcut protection", () => {
     expect(isBrowserReservedShortcut("Shift+W")).toBe(false);
     expect(getBrowserReservedShortcuts(["Ctrl+W", "Shift+1", "Ctrl+W", "Alt+ArrowLeft"]))
       .toEqual(["Ctrl+W", "Alt+ArrowLeft"]);
+    expect(getBrowserReservedShortcutCodes(["Ctrl+W", "Ctrl+Shift+W", "Alt+ArrowLeft"]))
+      .toEqual(["KeyW", "ArrowLeft"]);
+    expect(hasBrowserCloseShortcut(["Shift+W", "Ctrl+W"])).toBe(true);
+    expect(hasBrowserCloseShortcut(["Shift+W", "Ctrl+1"])).toBe(false);
   });
 
   it("enters fullscreen and locks the keyboard when the browser supports it", async () => {
@@ -93,9 +99,9 @@ describe("browser shortcut protection", () => {
     Object.defineProperty(document, "exitFullscreen", { configurable: true, value: exitFullscreen });
     Object.defineProperty(navigator, "keyboard", { configurable: true, value: { lock, unlock } });
 
-    expect(await requestBrowserShortcutLock()).toBe("locked");
+    expect(await requestBrowserShortcutLock(["Ctrl+W", "Alt+ArrowLeft"])).toBe("locked");
     expect(requestFullscreen).toHaveBeenCalledOnce();
-    expect(lock).toHaveBeenCalledOnce();
+    expect(lock).toHaveBeenCalledWith(["KeyW", "ArrowLeft"]);
 
     await releaseBrowserShortcutLock();
     expect(unlock).toHaveBeenCalledOnce();

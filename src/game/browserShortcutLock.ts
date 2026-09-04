@@ -22,6 +22,21 @@ const RESERVED_SHORTCUTS = new Set([
   "Alt+ArrowRight",
 ]);
 
+const RESERVED_SHORTCUT_KEY_CODES: Record<string, string> = {
+  "Ctrl+L": "KeyL",
+  "Ctrl+N": "KeyN",
+  "Ctrl+P": "KeyP",
+  "Ctrl+R": "KeyR",
+  "Ctrl+S": "KeyS",
+  "Ctrl+T": "KeyT",
+  "Ctrl+W": "KeyW",
+  "Ctrl+Shift+N": "KeyN",
+  "Ctrl+Shift+T": "KeyT",
+  "Ctrl+Shift+W": "KeyW",
+  "Alt+ArrowLeft": "ArrowLeft",
+  "Alt+ArrowRight": "ArrowRight",
+};
+
 let ownsFullscreen = false;
 
 export function isBrowserReservedShortcut(binding: string): boolean {
@@ -32,12 +47,25 @@ export function getBrowserReservedShortcuts(bindings: Iterable<string>): string[
   return [...new Set([...bindings].filter(isBrowserReservedShortcut))];
 }
 
+export function getBrowserReservedShortcutCodes(bindings: Iterable<string>): string[] {
+  return [...new Set(
+    getBrowserReservedShortcuts(bindings)
+      .map((binding) => RESERVED_SHORTCUT_KEY_CODES[binding])
+      .filter(Boolean),
+  )];
+}
+
+export function hasBrowserCloseShortcut(bindings: Iterable<string>): boolean {
+  return [...bindings].some((binding) => binding === "Ctrl+W" || binding === "Ctrl+Shift+W");
+}
+
 /**
  * Request fullscreen synchronously from the Start button's user gesture, then
  * ask Chromium's Keyboard Lock API to route reserved shortcuts to the game.
  */
-export function requestBrowserShortcutLock(): Promise<BrowserShortcutLockStatus> {
+export function requestBrowserShortcutLock(bindings: Iterable<string>): Promise<BrowserShortcutLockStatus> {
   const keyboard = (navigator as NavigatorWithKeyboard).keyboard;
+  const keyCodes = getBrowserReservedShortcutCodes(bindings);
   const root = document.documentElement;
   let fullscreenRequest: Promise<void> | null = null;
 
@@ -62,7 +90,9 @@ export function requestBrowserShortcutLock(): Promise<BrowserShortcutLockStatus>
 
     if (!keyboard?.lock) return "fullscreen-only";
     try {
-      await keyboard.lock();
+      // Request the physical keys explicitly. In Chromium this includes every
+      // modifier combination for the key (for example Ctrl+W for "KeyW").
+      await keyboard.lock(keyCodes);
       return "locked";
     } catch {
       return "fullscreen-only";

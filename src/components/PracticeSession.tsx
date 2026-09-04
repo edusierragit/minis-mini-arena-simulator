@@ -7,6 +7,7 @@ import { generateChallenge } from "../game/challengeGenerator";
 import { bindingKey, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../game/keybindUtils";
 import { calculateLateTimingBonus, calculateStats } from "../game/scoring";
 import { getArenaTargetNumber, getTargetDefinition } from "../game/targets";
+import { hasBrowserCloseShortcut } from "../game/browserShortcutLock";
 import { playFeedbackSound, prepareFeedbackAudio } from "../audio/gameAudio";
 import type { Bindings, Challenge, ClassDefinition, PracticeResult, PracticeSettings, ResultKind } from "../types";
 import type { BrowserShortcutLockStatus } from "../game/browserShortcutLock";
@@ -60,6 +61,14 @@ export function PracticeSession({
   const [remainingMs, setRemainingMs] = useState(() => getChallengeDurationMs(challenge, reactionWindowMs));
   const settledRef = useRef(false);
   const practiceSurfaceRef = useRef<HTMLElement>(null);
+  const closeShortcutConfigured = useMemo(() => {
+    const enabledSet = new Set(enabledSpellIds);
+    return hasBrowserCloseShortcut(
+      Object.entries(bindings)
+        .filter(([key]) => enabledSet.has(key.split(":")[0]))
+        .map(([, binding]) => binding),
+    );
+  }, [bindings, enabledSpellIds]);
 
   const stats = useMemo(() => calculateStats(results, reactionWindowMs), [results, reactionWindowMs]);
   const activeSpell = classDefinition.spells.find((spell) => spell.id === challenge?.spellId) ?? null;
@@ -77,14 +86,16 @@ export function PracticeSession({
   }, []);
 
   useEffect(() => {
-    if (shortcutLockStatus === "off" || shortcutLockStatus === "locked") return;
+    if (!closeShortcutConfigured) return;
     const warnBeforeClosing = (event: BeforeUnloadEvent) => {
       event.preventDefault();
-      event.returnValue = "";
+      // Browsers ignore custom text, but a non-empty return value activates
+      // their native leave-page confirmation when Keyboard Lock is unavailable.
+      event.returnValue = true;
     };
     window.addEventListener("beforeunload", warnBeforeClosing);
     return () => window.removeEventListener("beforeunload", warnBeforeClosing);
-  }, [shortcutLockStatus]);
+  }, [closeShortcutConfigured]);
 
   const settleChallenge = useCallback((kind: ResultKind, pressedBind: string | null) => {
     if (!challenge || feedback || paused || settledRef.current) return;
@@ -300,9 +311,9 @@ export function PracticeSession({
     : shortcutLockStatus === "requesting"
       ? "Requesting browser shortcut protection…"
       : shortcutLockStatus === "fullscreen-only"
-        ? "Fullscreen active · Keyboard Lock was not granted"
+        ? "Fullscreen active · Ctrl+W uses the browser's leave-page warning"
         : shortcutLockStatus === "unavailable"
-          ? "This browser cannot protect reserved shortcuts"
+          ? "Ctrl+W uses the browser's leave-page warning"
           : "Press the configured spell + target bind. No clicking required.";
 
   return (

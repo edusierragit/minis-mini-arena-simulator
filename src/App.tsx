@@ -76,7 +76,7 @@ export default function App() {
     const reservedShortcuts = getBrowserReservedShortcuts(activeBindings);
     if (reservedShortcuts.length > 0) {
       setShortcutLockStatus("requesting");
-      void requestBrowserShortcutLock().then(setShortcutLockStatus);
+      void requestBrowserShortcutLock(reservedShortcuts).then(setShortcutLockStatus);
     } else {
       setShortcutLockStatus("off");
     }
