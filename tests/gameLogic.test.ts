@@ -1,14 +1,20 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
+import { deathKnight } from "../src/classes/deathKnight";
+import { druid } from "../src/classes/druid";
+import { hunter } from "../src/classes/hunter";
 import { mage } from "../src/classes/mage";
 import { paladin } from "../src/classes/paladin";
 import { priest } from "../src/classes/priest";
 import { rogue } from "../src/classes/rogue";
 import { shaman } from "../src/classes/shaman";
+import { warlock } from "../src/classes/warlock";
+import { warrior } from "../src/classes/warrior";
 import { getDebuffDefinition } from "../src/data/debuffs";
 import { generateChallenge, getConfiguredChallenges } from "../src/game/challengeGenerator";
 import { bindingKey, getDuplicateBindings, keyboardEventToBind, mouseEventToBind, wheelEventToBind } from "../src/game/keybindUtils";
 import { calculateLateTimingBonus, calculateStats } from "../src/game/scoring";
+import { getTargetsForSpell } from "../src/game/targets";
 import {
   getBrowserReservedShortcutCodes,
   getBrowserReservedShortcuts,
@@ -143,6 +149,7 @@ describe("generic challenge generation", () => {
     [priest, "dispel-magic-ally", ["magic"]],
     [paladin, "cleanse", ["magic", "poison", "disease"]],
     [shaman, "cleanse-spirit", ["curse", "poison", "disease"]],
+    [warlock, "devour-magic-ally", ["magic"]],
   ] as const)("only shows debuffs that %s can remove", (classDefinition, spellId, allowedTypes) => {
     const dispelBindings = { [bindingKey(spellId, "party1")]: "Shift+1" };
 
@@ -171,6 +178,40 @@ describe("generic challenge generation", () => {
     });
     expect(["polymorph", "fear"]).toContain(challenge.cueId);
   });
+
+  it.each([
+    [warlock, ["spell-lock", "death-coil", "fear", "devour-magic-enemy", "seduction", "devour-magic-ally"]],
+    [warrior, ["shield-bash", "charge", "intercept", "intervene"]],
+    [hunter, ["scatter-shot", "silencing-shot", "viper-sting", "roar-of-sacrifice", "masters-call"]],
+    [deathKnight, ["mind-freeze", "strangulate", "gnaw", "death-grip", "chains-of-ice"]],
+  ] as const)("makes %s playable with its focused utility pool", (classDefinition, expectedSpellIds) => {
+    expect(classDefinition.playable).toBe(true);
+    expect(classDefinition.spells.map((spell) => spell.id)).toEqual(expectedSpellIds);
+  });
+
+  it("uses the requested ally-only targets for Sacrifice, Intervene, and pet utility", () => {
+    const targetIds = (classDefinition: typeof paladin, spellId: string) => {
+      const spell = classDefinition.spells.find((candidate) => candidate.id === spellId)!;
+      return getTargetsForSpell(spell).map((target) => target.id);
+    };
+
+    expect(targetIds(paladin, "hand-of-sacrifice")).toEqual(["party1", "party2"]);
+    expect(targetIds(warrior, "intervene")).toEqual(["party1", "party2"]);
+    expect(targetIds(warlock, "devour-magic-ally")).toEqual(["player", "party1", "party2"]);
+    expect(targetIds(hunter, "roar-of-sacrifice")).toEqual(["player", "party1", "party2"]);
+    expect(targetIds(hunter, "masters-call")).toEqual(["player", "party1", "party2"]);
+  });
+
+  it.each([rogue, druid, warlock, warrior, hunter, deathKnight])(
+    "gives %s a duplicate-free default suggested loadout",
+    (classDefinition) => {
+      const suggested = classDefinition.spells
+        .filter((spell) => spell.enabledByDefault !== false)
+        .flatMap((spell) => getTargetsForSpell(spell).map((target) => spell.suggestedBindings?.[target.id]))
+        .filter((binding): binding is string => Boolean(binding));
+      expect(new Set(suggested).size).toBe(suggested.length);
+    },
+  );
 
   it("treats Rogue Shadowstep macros as one bindable arena action", () => {
     const macro = rogue.spells.find((spell) => spell.id === "shadowstep-kick");

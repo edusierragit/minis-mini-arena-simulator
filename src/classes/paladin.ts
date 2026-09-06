@@ -40,8 +40,9 @@ export const paladin: ClassDefinition = {
       name: "Hand of Sacrifice",
       icon: "icons/paladin/hand-of-sacrifice.jpg",
       targetMode: "ally",
-      description: "Damage-transfer utility for a specific teammate.",
-      suggestedBindings: { player: "Shift+Q", party1: "Shift+W", party2: "Shift+E" },
+      targetIds: ["party1", "party2"],
+      description: "Damage-transfer utility for Party 1 or Party 2.",
+      suggestedBindings: { party1: "Shift+W", party2: "Shift+E" },
       enabledByDefault: false,
     },
     {

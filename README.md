@@ -2,9 +2,9 @@
 
 A standalone, Gladius-inspired keyboard reaction trainer for practicing WoW arena and party-target muscle memory. It runs entirely in the browser and neither connects to nor automates World of Warcraft.
 
-Mage, Rogue, Priest, Paladin, Druid, and Shaman are playable. Keyboard keys, modifier combinations, WheelUp, WheelDown, MiddleClick, and extra mouse buttons Mouse4 through Mouse20 are supported when exposed by the browser or mouse driver. Abilities can be enabled or disabled individually; the default Mage pool is Frostbolt Rank 1, Deep Freeze, Counterspell, and Polymorph.
+All ten WotLK classes are playable. Keyboard keys, modifier combinations, WheelUp, WheelDown, MiddleClick, and extra mouse buttons Mouse4 through Mouse20 are supported when exposed by the browser or mouse driver. Abilities can be enabled or disabled individually; each class starts with a focused arena utility pool.
 
-When an enabled bind conflicts with a browser shortcut such as `Ctrl+W`, supported Chromium browsers automatically enter protected fullscreen practice through the Keyboard Lock API. Priest also includes an optional advanced Shadow Word: Death drill with an incoming Gladius cast bar and a larger score bonus for later timing. Rogue includes one-bind arena drills for Shadowstep + Kick, Shadowstep + Blind, and Shadowstep + Cheap Shot, plus party-target Tricks of the Trade practice.
+When an enabled bind conflicts with a browser shortcut such as `Ctrl+W`, supported Chromium browsers automatically enter protected fullscreen practice through the Keyboard Lock API. Priest also includes an optional advanced Shadow Word: Death drill with an incoming Gladius cast bar and a larger score bonus for later timing. Rogue includes one-bind arena drills for Shadowstep + Kick, Shadowstep + Sap, and Shadowstep + Cheap Shot, plus party-target Tricks of the Trade practice.
 
 Built by [Eduardo Sierra](https://x.com/eduardo39657119) and **Minimalistic**.
 

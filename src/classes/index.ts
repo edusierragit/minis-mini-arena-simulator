@@ -1,17 +1,14 @@
 import type { ClassDefinition } from "../types";
+import { deathKnight } from "./deathKnight";
 import { druid } from "./druid";
+import { hunter } from "./hunter";
 import { mage } from "./mage";
 import { paladin } from "./paladin";
 import { priest } from "./priest";
 import { rogue } from "./rogue";
 import { shaman } from "./shaman";
-
-const comingSoon = [
-  ["warrior", "Warrior", "#c69b6d"],
-  ["warlock", "Warlock", "#9482c9"],
-  ["hunter", "Hunter", "#aad372"],
-  ["death-knight", "Death Knight", "#c41e3a"],
-] as const;
+import { warlock } from "./warlock";
+import { warrior } from "./warrior";
 
 export const classDefinitions: ClassDefinition[] = [
   mage,
@@ -20,15 +17,10 @@ export const classDefinitions: ClassDefinition[] = [
   paladin,
   druid,
   shaman,
-  ...comingSoon.map(([id, name, color]) => ({
-    id,
-    name,
-    color,
-    playable: false,
-    availabilityLabel: id === "death-knight" ? "COMING NEVER" : "COMING SOON",
-    icon: `icons/classes/${id}.jpg`,
-    spells: [],
-  })),
+  warrior,
+  warlock,
+  hunter,
+  deathKnight,
 ];
 
 export function getClassDefinition(classId: string): ClassDefinition | undefined {

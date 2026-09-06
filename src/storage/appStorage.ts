@@ -2,9 +2,10 @@ import { DEFAULT_SETTINGS } from "../config";
 import type { Bindings, PracticeSettings } from "../types";
 
 const STORAGE_KEY = "minis-mini-arena-simulator:v1";
-const CONTENT_VERSION = 3;
-const REMOVED_ROGUE_SPELLS = new Set(["cheap-shot", "ambush", "eviscerate", "hemorrhage", "rupture", "deadly-throw"]);
-const NEW_ROGUE_DEFAULTS = ["shadowstep-kick", "shadowstep-blind", "shadowstep-cheap-shot"];
+const CONTENT_VERSION = 4;
+const REMOVED_ROGUE_SPELLS = new Set(["ambush", "eviscerate", "hemorrhage", "rupture", "deadly-throw"]);
+const REMOVED_MAGE_SPELLS = new Set(["scorch", "arcane-barrage", "slow", "frost-nova", "ice-lance"]);
+const NEW_ROGUE_DEFAULTS = ["shadowstep-kick", "shadowstep-sap", "shadowstep-cheap-shot"];
 
 interface StoredState {
   selectedClassId: string | null;
@@ -24,6 +25,24 @@ const initialState: StoredState = {
   settings: DEFAULT_SETTINGS,
 };
 
+function migrateRogueBindings(bindings: Bindings): Bindings {
+  return Object.entries(bindings).reduce<Bindings>((migrated, [key, binding]) => {
+    const [spellId, targetId] = key.split(":");
+    if (REMOVED_ROGUE_SPELLS.has(spellId)) return migrated;
+
+    const nextSpellId = spellId === "shadowstep-blind" ? "shadowstep-sap" : spellId;
+    const nextKey = `${nextSpellId}:${targetId}`;
+    if (!(nextKey in migrated) || spellId !== "shadowstep-blind") migrated[nextKey] = binding;
+    return migrated;
+  }, {});
+}
+
+function removeSpellBindings(bindings: Bindings, removedSpellIds: Set<string>): Bindings {
+  return Object.fromEntries(
+    Object.entries(bindings).filter(([key]) => !removedSpellIds.has(key.split(":")[0])),
+  );
+}
+
 export function loadAppState(): StoredState {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -35,15 +54,23 @@ export function loadAppState(): StoredState {
     const previousContentVersion = parsed.contentVersion ?? 1;
     if (previousContentVersion < CONTENT_VERSION) {
       if (bindingsByClass.rogue) {
-        bindingsByClass.rogue = Object.fromEntries(
-          Object.entries(bindingsByClass.rogue).filter(([key]) => !REMOVED_ROGUE_SPELLS.has(key.split(":")[0])),
-        );
+        bindingsByClass.rogue = migrateRogueBindings(bindingsByClass.rogue);
       }
-      if (previousContentVersion < 2 && enabledSpellsByClass.rogue) {
-        enabledSpellsByClass.rogue = [
-          ...enabledSpellsByClass.rogue.filter((id) => !REMOVED_ROGUE_SPELLS.has(id)),
-          ...NEW_ROGUE_DEFAULTS.filter((id) => !enabledSpellsByClass.rogue.includes(id)),
-        ];
+      if (enabledSpellsByClass.rogue) {
+        const migratedRogueSpells = enabledSpellsByClass.rogue
+          .filter((id) => !REMOVED_ROGUE_SPELLS.has(id))
+          .map((id) => id === "shadowstep-blind" ? "shadowstep-sap" : id);
+        if (!migratedRogueSpells.includes("cheap-shot")) migratedRogueSpells.push("cheap-shot");
+        if (previousContentVersion < 2) {
+          migratedRogueSpells.push(...NEW_ROGUE_DEFAULTS.filter((id) => !migratedRogueSpells.includes(id)));
+        }
+        enabledSpellsByClass.rogue = [...new Set(migratedRogueSpells)];
+      }
+      if (bindingsByClass.mage) {
+        bindingsByClass.mage = removeSpellBindings(bindingsByClass.mage, REMOVED_MAGE_SPELLS);
+      }
+      if (enabledSpellsByClass.mage) {
+        enabledSpellsByClass.mage = enabledSpellsByClass.mage.filter((id) => !REMOVED_MAGE_SPELLS.has(id));
       }
     }
 

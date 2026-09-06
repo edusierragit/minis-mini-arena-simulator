@@ -1,0 +1,67 @@
+import type { ClassDefinition } from "../types";
+
+/** WotLK 3.3.5a Warlock arena and Felhunter/Succubus training data. */
+export const warlock: ClassDefinition = {
+  id: "warlock",
+  name: "Warlock",
+  icon: "icons/classes/warlock.jpg",
+  playable: true,
+  color: "#9482c9",
+  spells: [
+    {
+      id: "spell-lock",
+      name: "Spell Lock",
+      icon: "icons/warlock/spell-lock.jpg",
+      targetMode: "arena",
+      description: "Felhunter interrupt and school lock on a specific enemy.",
+      suggestedBindings: { arena1: "Ctrl+1", arena2: "Ctrl+2", arena3: "Ctrl+3" },
+      enabledByDefault: true,
+    },
+    {
+      id: "death-coil",
+      name: "Death Coil",
+      icon: "icons/warlock/death-coil.jpg",
+      targetMode: "arena",
+      description: "Horror a specific arena enemy.",
+      suggestedBindings: { arena1: "Shift+1", arena2: "Shift+2", arena3: "Shift+3" },
+      enabledByDefault: true,
+    },
+    {
+      id: "fear",
+      name: "Fear",
+      icon: "icons/warlock/fear.jpg",
+      targetMode: "arena",
+      description: "Fear a specific arena enemy without changing target.",
+      suggestedBindings: { arena1: "1", arena2: "2", arena3: "3" },
+      enabledByDefault: true,
+    },
+    {
+      id: "devour-magic-enemy",
+      name: "Devour Magic (Enemy)",
+      icon: "icons/warlock/devour-magic.jpg",
+      targetMode: "arena",
+      description: "Felhunter purge on a specific enemy.",
+      suggestedBindings: { arena1: "Alt+1", arena2: "Alt+2", arena3: "Alt+3" },
+      enabledByDefault: true,
+    },
+    {
+      id: "seduction",
+      name: "Seduction",
+      icon: "icons/warlock/seduction.jpg",
+      targetMode: "arena",
+      description: "Succubus crowd control on a specific enemy.",
+      suggestedBindings: { arena1: "Ctrl+Q", arena2: "Ctrl+W", arena3: "Ctrl+E" },
+      enabledByDefault: true,
+    },
+    {
+      id: "devour-magic-ally",
+      name: "Devour Magic (Ally)",
+      icon: "icons/warlock/devour-magic.jpg",
+      targetMode: "ally",
+      description: "Felhunter dispel for Self, Party 1 or Party 2.",
+      suggestedBindings: { player: "Shift+F1", party1: "Shift+F2", party2: "Shift+F3" },
+      enabledByDefault: true,
+      dispels: ["magic"],
+    },
+  ],
+};

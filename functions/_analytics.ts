@@ -6,7 +6,18 @@ const EVENT_NAMES = [
   "session-completed",
 ] as const;
 
-const CLASS_IDS = new Set(["mage", "rogue", "priest", "paladin", "druid", "shaman"]);
+const CLASS_IDS = new Set([
+  "mage",
+  "rogue",
+  "priest",
+  "paladin",
+  "druid",
+  "shaman",
+  "warrior",
+  "warlock",
+  "hunter",
+  "death-knight",
+]);
 const DIFFICULTIES = new Set(["slow", "normal", "fast"]);
 const BROWSERS = new Set(["brave", "chrome", "edge", "firefox", "opera", "safari", "other"]);
 const OPERATING_SYSTEMS = new Set(["windows", "macos", "linux", "chromeos", "android", "ios", "other"]);

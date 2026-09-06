@@ -60,14 +60,12 @@ describe("complete app flow", () => {
     vi.restoreAllMocks();
   });
 
-  it("offers Mage, Rogue, Priest, Paladin, Druid, and Shaman as playable classes", () => {
+  it("offers all ten WotLK classes as playable", () => {
     render(<App />);
 
-    ["mage", "rogue", "priest", "paladin", "druid", "shaman"].forEach((classId) => {
+    ["mage", "rogue", "priest", "paladin", "druid", "shaman", "warrior", "warlock", "hunter", "death-knight"].forEach((classId) => {
       expect((screen.getByTestId(`${classId}-class-card`) as HTMLButtonElement).disabled).toBe(false);
     });
-    expect((screen.getByTestId("warrior-class-card") as HTMLButtonElement).disabled).toBe(true);
-    expect(within(screen.getByTestId("death-knight-class-card")).getByText("COMING NEVER")).not.toBeNull();
     expect(screen.getByText("BETA")).not.toBeNull();
     expect(screen.getByRole("link", { name: "Eduardo Sierra" }).getAttribute("href")).toBe(
       "https://x.com/eduardo39657119",
@@ -87,7 +85,10 @@ describe("complete app flow", () => {
     expect(screen.getByTestId("bind-blind-2").textContent).toContain("Shift+2");
     expect(screen.getByTestId("toggle-shadowstep").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("toggle-shadowstep-kick").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("bind-shadowstep-blind-2").textContent).toContain("Ctrl+Alt+2");
+    expect(screen.getByTestId("toggle-cheap-shot").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("bind-cheap-shot-2").textContent).toContain("W");
+    expect(screen.getByTestId("bind-shadowstep-sap-2").textContent).toContain("Ctrl+Alt+2");
+    expect(screen.getByText("SHADOWSTEP → SAP")).not.toBeNull();
     expect(screen.getByText("SHADOWSTEP → CHEAP SHOT")).not.toBeNull();
     expect(screen.getByLabelText("Shadowstep then Kick macro").querySelectorAll("img")).toHaveLength(2);
     expect(screen.getByTestId("toggle-garrote").getAttribute("aria-pressed")).toBe("false");
@@ -113,13 +114,40 @@ describe("complete app flow", () => {
 
     expect(screen.getByTestId("bind-kick-1").textContent).toContain("Ctrl+1");
     expect(screen.getByTestId("toggle-shadowstep-kick").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("toggle-shadowstep-blind").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("toggle-shadowstep-sap").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("toggle-shadowstep-cheap-shot").getAttribute("aria-pressed")).toBe("true");
     expect(screen.queryByRole("heading", { name: "Ambush" })).toBeNull();
 
     const saved = JSON.parse(localStorage.getItem("minis-mini-arena-simulator:v1") ?? "{}");
-    expect(saved.contentVersion).toBe(3);
+    expect(saved.contentVersion).toBe(4);
     expect(saved.bindingsByClass.rogue["ambush:arena1"]).toBeUndefined();
+  });
+
+  it("renames the saved Shadowstep macro and removes retired Mage abilities", () => {
+    localStorage.setItem("minis-mini-arena-simulator:v1", JSON.stringify({
+      contentVersion: 3,
+      selectedClassId: "rogue",
+      bindingsByClass: {
+        rogue: { "shadowstep-blind:arena2": "Ctrl+Alt+2" },
+        mage: { "polymorph:arena1": "Shift+1", "slow:arena1": "Alt+1" },
+      },
+      enabledSpellsByClass: {
+        rogue: ["kick", "shadowstep-blind"],
+        mage: ["polymorph", "slow", "ice-lance"],
+      },
+      settings: { difficulty: "normal", sessionLength: 30, muted: false },
+    }));
+
+    render(<App />);
+
+    expect(screen.getByTestId("bind-shadowstep-sap-2").textContent).toContain("Ctrl+Alt+2");
+    expect(screen.getByTestId("toggle-cheap-shot").getAttribute("aria-pressed")).toBe("true");
+    const saved = JSON.parse(localStorage.getItem("minis-mini-arena-simulator:v1") ?? "{}");
+    expect(saved.contentVersion).toBe(4);
+    expect(saved.bindingsByClass.rogue["shadowstep-blind:arena2"]).toBeUndefined();
+    expect(saved.bindingsByClass.rogue["shadowstep-sap:arena2"]).toBe("Ctrl+Alt+2");
+    expect(saved.bindingsByClass.mage["slow:arena1"]).toBeUndefined();
+    expect(saved.enabledSpellsByClass.mage).toEqual(["polymorph"]);
   });
 
   it("removes Deadly Throw without re-enabling macros a player disabled", () => {
@@ -135,7 +163,7 @@ describe("complete app flow", () => {
 
     expect(screen.getByTestId("toggle-shadowstep-kick").getAttribute("aria-pressed")).toBe("false");
     const saved = JSON.parse(localStorage.getItem("minis-mini-arena-simulator:v1") ?? "{}");
-    expect(saved.contentVersion).toBe(3);
+    expect(saved.contentVersion).toBe(4);
     expect(saved.bindingsByClass.rogue["deadly-throw:arena1"]).toBeUndefined();
   });
 
@@ -152,7 +180,7 @@ describe("complete app flow", () => {
     expect(within(mageList).getByRole("heading", { name: "Polymorph" })).not.toBeNull();
     expect(within(mageList).queryByRole("heading", { name: "Cleanse" })).toBeNull();
     expect(within(mageList).queryByRole("heading", { name: "Kick" })).toBeNull();
-    expect(screen.getByText("1/12 abilities enabled")).not.toBeNull();
+    expect(screen.getByText("1/7 abilities enabled")).not.toBeNull();
   });
 
   it("captures, replaces, clears, and warns about duplicate modifier binds", () => {
@@ -266,7 +294,7 @@ describe("complete app flow", () => {
     expect(screen.getByTestId("toggle-spellsteal").getAttribute("aria-pressed")).toBe("false");
     fireEvent.click(screen.getByTestId("toggle-spellsteal"));
     expect(screen.getByTestId("toggle-spellsteal").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByText("5/12 abilities enabled")).not.toBeNull();
+    expect(screen.getByText("5/7 abilities enabled")).not.toBeNull();
 
     view.unmount();
     render(<App />);

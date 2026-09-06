@@ -82,6 +82,16 @@ describe("Cloudflare analytics payload validation", () => {
     expect(normalizeAnalyticsPayload("site-opened")).toBeNull();
   });
 
+  it.each(["warrior", "warlock", "hunter", "death-knight"])(
+    "accepts the new playable %s class dimension",
+    (classId) => {
+      expect(normalizeAnalyticsPayload({
+        event: "practice-started",
+        dimensions: { class: classId, difficulty: "normal", rounds: 30 },
+      })).toMatchObject({ classId });
+    },
+  );
+
   it("writes a validated aggregate counter through a prepared statement", async () => {
     let boundValues: Array<string | number | null> = [];
     const statement: D1PreparedStatement = {
