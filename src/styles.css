@@ -116,6 +116,11 @@ button:focus-visible { outline: 2px solid #d3c2ff; outline-offset: 2px; }
   box-shadow: 0 0 24px color-mix(in srgb, var(--class-color) 20%, transparent);
 }
 .class-card.is-locked { opacity: 0.5; filter: saturate(0.45); }
+.quick-demo-entry { width: min(680px, 100%); margin: 24px auto 0; text-align: center; }
+.quick-demo-entry .small-button { min-height: 44px; font-size: .875rem; }
+.quick-demo-entry p { margin: 10px 0 0; color: var(--muted); font-size: .875rem; line-height: 1.6; }
+.demo-bind-hint { margin: 0 0 18px; color: #c9b7e6; font-size: .875rem; line-height: 1.8; text-align: center; }
+.quick-demo-entry kbd, .demo-bind-hint kbd { padding: 2px 5px; border: 1px solid #554963; border-radius: 2px; background: #211a2b; color: #fff; font-size: inherit; }
 .keyboard-note { margin: 28px auto 0; color: #645e6b; font-size: 11px; letter-spacing: 0.04em; }
 .creator-credit { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 12px auto 0; color: #514a59; font-size: 9px; }
 .creator-credit i { font-style: normal; }

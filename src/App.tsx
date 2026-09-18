@@ -4,6 +4,7 @@ import { getClassDefinition } from "./classes";
 import { ClassSelector } from "./components/ClassSelector";
 import { KeybindConfigurator } from "./components/KeybindConfigurator";
 import { PracticeSession } from "./components/PracticeSession";
+import { QuickDemo } from "./components/QuickDemo";
 import { loadAppState, saveAppState } from "./storage/appStorage";
 import {
   getBrowserReservedShortcuts,
@@ -24,6 +25,7 @@ export default function App() {
   const [settings, setSettings] = useState<PracticeSettings>(initial.settings);
   const [screen, setScreen] = useState<Screen>(initialClass?.playable ? "bindings" : "classes");
   const [shortcutLockStatus, setShortcutLockStatus] = useState<BrowserShortcutLockStatus>("off");
+  const [showDemo, setShowDemo] = useState(false);
 
   const selectedClass = selectedClassId ? getClassDefinition(selectedClassId) : undefined;
   const bindings = selectedClassId ? bindingsByClass[selectedClassId] ?? {} : {};
@@ -88,8 +90,20 @@ export default function App() {
     setScreen("practice");
   };
 
+  if (showDemo) {
+    return (
+      <QuickDemo
+        onExit={() => setShowDemo(false)}
+        onConfigure={() => {
+          setShowDemo(false);
+          selectClass("mage");
+        }}
+      />
+    );
+  }
+
   if (screen === "classes" || !selectedClass) {
-    return <ClassSelector onSelect={selectClass} />;
+    return <ClassSelector onSelect={selectClass} onDemo={() => setShowDemo(true)} />;
   }
 
   if (screen === "practice") {

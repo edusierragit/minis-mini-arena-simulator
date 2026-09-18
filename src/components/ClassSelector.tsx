@@ -3,9 +3,10 @@ import { assetUrl } from "../utils/assets";
 
 interface ClassSelectorProps {
   onSelect: (classId: string) => void;
+  onDemo: () => void;
 }
 
-export function ClassSelector({ onSelect }: ClassSelectorProps) {
+export function ClassSelector({ onSelect, onDemo }: ClassSelectorProps) {
   return (
     <main className="screen class-screen">
       <div className="title-block">
@@ -36,6 +37,11 @@ export function ClassSelector({ onSelect }: ClassSelectorProps) {
           </button>
         ))}
       </section>
+
+      <div className="quick-demo-entry">
+        <button type="button" className="small-button" onClick={onDemo}>Try a 5-action demo</button>
+        <p>Polymorph with <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd> on Arena 1, 2, 3. No setup; saved binds stay untouched.</p>
+      </div>
 
       <p className="keyboard-note">Desktop keyboard recommended · No game client connection</p>
       <footer className="creator-credit">

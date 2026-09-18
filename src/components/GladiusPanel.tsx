@@ -12,6 +12,8 @@ interface GladiusPanelProps {
     progress: number;
     timingBonus: number;
     isBonusWindow: boolean;
+    drCategory: "interrupt" | "stun" | "disorient" | "incapacitate" | null;
+    drStage: 1 | 2 | 3 | null;
   } | null;
   feedback: ResultKind | null;
 }

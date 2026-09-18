@@ -22,6 +22,7 @@ interface PracticeSessionProps {
   enabledSpellIds: string[];
   settings: PracticeSettings;
   shortcutLockStatus: BrowserShortcutLockStatus;
+  isDemo?: boolean;
   onSettingsChange: (settings: PracticeSettings) => void;
   onChangeBinds: () => void;
   onChangeClass: () => void;
@@ -44,6 +45,7 @@ export function PracticeSession({
   enabledSpellIds,
   settings,
   shortcutLockStatus,
+  isDemo = false,
   onSettingsChange,
   onChangeBinds,
   onChangeClass,
@@ -159,11 +161,13 @@ export function PracticeSession({
     const delay = FEEDBACK_DELAY_MS[feedback.kind];
     const transition = window.setTimeout(() => {
       if (results.length >= settings.sessionLength) {
-        trackAnalyticsEvent("session-completed", {
-          class: classDefinition.id,
-          difficulty: settings.difficulty,
-          rounds: settings.sessionLength,
-        });
+        if (!isDemo) {
+          trackAnalyticsEvent("session-completed", {
+            class: classDefinition.id,
+            difficulty: settings.difficulty,
+            rounds: settings.sessionLength,
+          });
+        }
         setFinished(true);
         setFeedback(null);
         return;
@@ -177,7 +181,7 @@ export function PracticeSession({
     }, delay);
 
     return () => window.clearTimeout(transition);
-  }, [bindings, challenge, classDefinition, enabledSpellIds, feedback, reactionWindowMs, results.length, settings.sessionLength]);
+  }, [bindings, challenge, classDefinition, enabledSpellIds, feedback, isDemo, reactionWindowMs, results.length, settings.difficulty, settings.sessionLength]);
 
   const togglePause = useCallback(() => {
     if (!challenge || feedback || finished) return;
@@ -260,11 +264,13 @@ export function PracticeSession({
   }, [challenge, feedback, finished, paused, settleChallenge, togglePause]);
 
   const restart = useCallback(() => {
-    trackAnalyticsEvent("practice-restarted", {
-      class: classDefinition.id,
-      difficulty: settings.difficulty,
-      rounds: settings.sessionLength,
-    });
+    if (!isDemo) {
+      trackAnalyticsEvent("practice-restarted", {
+        class: classDefinition.id,
+        difficulty: settings.difficulty,
+        rounds: settings.sessionLength,
+      });
+    }
     const next = generateChallenge(classDefinition, bindings, enabledSpellIds, null, Date.now());
     settledRef.current = false;
     setOpponents(createOpponentTeam());
@@ -275,13 +281,14 @@ export function PracticeSession({
     setFinished(false);
     setRemainingMs(getChallengeDurationMs(next, reactionWindowMs));
     setChallenge(next);
-  }, [bindings, classDefinition, enabledSpellIds, reactionWindowMs, settings.difficulty, settings.sessionLength]);
+  }, [bindings, classDefinition, enabledSpellIds, isDemo, reactionWindowMs, settings.difficulty, settings.sessionLength]);
 
   if (finished) {
     return (
       <SessionResults
         stats={stats}
         total={results.length}
+        isDemo={isDemo}
         onAgain={restart}
         onChangeBinds={onChangeBinds}
         onChangeClass={onChangeClass}
@@ -328,10 +335,14 @@ export function PracticeSession({
         onPauseToggle={togglePause}
         onMuteToggle={() => onSettingsChange({ ...settings, muted: !settings.muted })}
         onRestart={restart}
-        onExit={onChangeBinds}
+        onExit={isDemo ? onChangeClass : onChangeBinds}
+        exitLabel={isDemo ? "Exit demo" : "Binds"}
       />
 
       <div className="practice-stage">
+        {isDemo && (
+          <p className="demo-bind-hint">DEMO · Polymorph: <kbd>1</kbd> Arena 1 · <kbd>2</kbd> Arena 2 · <kbd>3</kbd> Arena 3</p>
+        )}
         <div className={`challenge-callout ${feedback ? `is-${feedback.kind}` : ""}`} aria-live="assertive">
           {feedbackCopy ? (
             <strong data-testid="feedback-copy">{feedbackCopy}</strong>
@@ -356,6 +367,8 @@ export function PracticeSession({
               progress: Math.max(0, Math.min(1, counterplayElapsedMs / challengeDurationMs)),
               timingBonus: liveTimingBonus,
               isBonusWindow: counterplayWindowOpen,
+              drCategory: challenge.drCategory,
+              drStage: challenge.drStage,
             } : null}
             feedback={feedback?.kind ?? null}
           />

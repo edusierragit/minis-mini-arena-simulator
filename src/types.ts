@@ -19,6 +19,7 @@ export interface SpellDefinition {
     cueIds: string[];
     castDurationMs: number;
     bonusWindowMs: number;
+    drCategory?: "interrupt" | "stun" | "disorient" | "incapacitate";
   };
 }
 
@@ -45,6 +46,8 @@ export interface Challenge {
     castDurationMs: number;
     bonusWindowMs: number;
   } | null;
+  drCategory: "interrupt" | "stun" | "disorient" | "incapacitate" | null;
+  drStage: 1 | 2 | 3 | null;
   startedAt: number;
   elapsedMs: number;
 }

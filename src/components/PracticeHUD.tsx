@@ -11,6 +11,7 @@ interface PracticeHUDProps {
   onMuteToggle: () => void;
   onRestart: () => void;
   onExit: () => void;
+  exitLabel?: string;
 }
 
 export function PracticeHUD({
@@ -24,6 +25,7 @@ export function PracticeHUD({
   onMuteToggle,
   onRestart,
   onExit,
+  exitLabel = "Binds",
 }: PracticeHUDProps) {
   return (
     <>
@@ -33,7 +35,7 @@ export function PracticeHUD({
           <button type="button" onClick={onMuteToggle} aria-pressed={muted}>{muted ? "Sound off" : "Sound on"}</button>
           <button type="button" onClick={onPauseToggle}>{paused ? "Resume" : "Pause"} <kbd>Esc</kbd></button>
           <button type="button" onClick={onRestart}>Restart</button>
-          <button type="button" onClick={onExit}>Binds</button>
+          <button type="button" onClick={onExit}>{exitLabel}</button>
         </div>
       </header>
 

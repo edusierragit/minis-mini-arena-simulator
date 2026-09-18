@@ -16,6 +16,7 @@ export const rogue: ClassDefinition = {
       description: "Interrupt a specific arena enemy.",
       suggestedBindings: { arena1: "Ctrl+1", arena2: "Ctrl+2", arena3: "Ctrl+3" },
       enabledByDefault: true,
+      counterplay: { cueIds: ["polymorph", "fear", "hex", "hammer-of-justice"], castDurationMs: 1500, bonusWindowMs: 300, drCategory: "interrupt" },
     },
     {
       id: "blind",
@@ -25,6 +26,7 @@ export const rogue: ClassDefinition = {
       description: "Blind a specific arena enemy.",
       suggestedBindings: { arena1: "Shift+1", arena2: "Shift+2", arena3: "Shift+3" },
       enabledByDefault: true,
+      counterplay: { cueIds: ["polymorph", "fear"], castDurationMs: 1200, bonusWindowMs: 250, drCategory: "disorient" },
     },
     {
       id: "sap",
@@ -34,6 +36,7 @@ export const rogue: ClassDefinition = {
       description: "Sap a specific arena enemy without changing target.",
       suggestedBindings: { arena1: "Alt+1", arena2: "Alt+2", arena3: "Alt+3" },
       enabledByDefault: true,
+      counterplay: { cueIds: ["polymorph", "fear"], castDurationMs: 1200, bonusWindowMs: 250, drCategory: "incapacitate" },
     },
     {
       id: "cheap-shot",
@@ -43,6 +46,7 @@ export const rogue: ClassDefinition = {
       description: "Cheap Shot a specific enemy from stealth or Shadow Dance.",
       suggestedBindings: { arena1: "Q", arena2: "W", arena3: "E" },
       enabledByDefault: true,
+      counterplay: { cueIds: ["polymorph", "fear"], castDurationMs: 1200, bonusWindowMs: 250, drCategory: "stun" },
     },
     {
       id: "kidney-shot",
@@ -52,6 +56,7 @@ export const rogue: ClassDefinition = {
       description: "Stun a specific arena enemy with Kidney Shot.",
       suggestedBindings: { arena1: "1", arena2: "2", arena3: "3" },
       enabledByDefault: true,
+      counterplay: { cueIds: ["polymorph", "fear"], castDurationMs: 1400, bonusWindowMs: 300, drCategory: "stun" },
     },
     {
       id: "shadowstep",
@@ -72,6 +77,7 @@ export const rogue: ClassDefinition = {
       enabledByDefault: true,
       macroSteps: ["Shadowstep", "Kick"],
       macroIcons: ["icons/rogue/shadowstep.jpg", "icons/rogue/kick.jpg"],
+      counterplay: { cueIds: ["polymorph", "fear", "hex", "hammer-of-justice"], castDurationMs: 1500, bonusWindowMs: 300, drCategory: "interrupt" },
     },
     {
       id: "shadowstep-sap",
@@ -83,6 +89,7 @@ export const rogue: ClassDefinition = {
       enabledByDefault: true,
       macroSteps: ["Shadowstep", "Sap"],
       macroIcons: ["icons/rogue/shadowstep.jpg", "icons/rogue/sap.jpg"],
+      counterplay: { cueIds: ["polymorph", "fear"], castDurationMs: 1200, bonusWindowMs: 250, drCategory: "incapacitate" },
     },
     {
       id: "shadowstep-cheap-shot",
@@ -94,6 +101,7 @@ export const rogue: ClassDefinition = {
       enabledByDefault: true,
       macroSteps: ["Shadowstep", "Cheap Shot"],
       macroIcons: ["icons/rogue/shadowstep.jpg", "icons/rogue/cheap-shot.jpg"],
+      counterplay: { cueIds: ["polymorph", "fear"], castDurationMs: 1200, bonusWindowMs: 250, drCategory: "stun" },
     },
     {
       id: "gouge",

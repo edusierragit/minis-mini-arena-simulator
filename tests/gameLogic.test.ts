@@ -179,6 +179,37 @@ describe("generic challenge generation", () => {
     expect(["polymorph", "fear"]).toContain(challenge.cueId);
   });
 
+  it("builds Rogue interrupt drills with a cast cue but no false DR", () => {
+    const challenge = generateChallenge(
+      rogue,
+      { [bindingKey("shadowstep-kick", "arena1")]: "Ctrl+1" },
+      ["shadowstep-kick"],
+      null,
+      4,
+    );
+
+    expect(challenge).toMatchObject({
+      spellId: "shadowstep-kick",
+      counterplay: { castDurationMs: 1500, bonusWindowMs: 300 },
+      drCategory: "interrupt",
+      drStage: null,
+    });
+    expect(["polymorph", "fear", "hex", "hammer-of-justice"]).toContain(challenge.cueId);
+  });
+
+  it("adds a DR stage to Rogue stuns", () => {
+    const challenge = generateChallenge(
+      rogue,
+      { [bindingKey("shadowstep-cheap-shot", "arena1")]: "Ctrl+1" },
+      ["shadowstep-cheap-shot"],
+      null,
+      4,
+    );
+
+    expect(challenge.drCategory).toBe("stun");
+    expect(challenge.drStage).toBe(2);
+  });
+
   it.each([
     [warlock, ["spell-lock", "death-coil", "fear", "devour-magic-enemy", "seduction", "devour-magic-ally"]],
     [warrior, ["shield-bash", "charge", "intercept", "intervene"]],

@@ -60,6 +60,10 @@ export function generateChallenge(
           bonusWindowMs: spell.counterplay.bonusWindowMs,
         }
       : null,
+    drCategory: spell?.counterplay?.drCategory ?? null,
+    drStage: spell?.counterplay?.drCategory && spell.counterplay.drCategory !== "interrupt"
+      ? ((Math.abs(id) % 3) + 1) as 1 | 2 | 3
+      : null,
     startedAt: performance.now(),
     elapsedMs: 0,
   };

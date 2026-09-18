@@ -12,6 +12,8 @@ interface ArenaFrameProps {
     progress: number;
     timingBonus: number;
     isBonusWindow: boolean;
+    drCategory: "interrupt" | "stun" | "disorient" | "incapacitate" | null;
+    drStage: 1 | 2 | 3 | null;
   } | null;
   feedback: ResultKind | null;
 }
@@ -39,7 +41,7 @@ export function ArenaFrame({ target, opponent, activeSpell, incomingCast, feedba
           <div
             className={`frame-cast-bar ${incomingCast.isBonusWindow ? "is-bonus-window" : ""}`}
             role="progressbar"
-            aria-label={`${incomingCast.name} cast`}
+            aria-label={`${incomingCast.name} cast${incomingCast.drStage ? `, DR ${incomingCast.drStage} of 3` : ""}`}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(incomingCast.progress * 100)}
@@ -47,7 +49,7 @@ export function ArenaFrame({ target, opponent, activeSpell, incomingCast, feedba
           >
             <i style={{ transform: `scaleX(${incomingCast.progress})` }} />
             <span><img src={assetUrl(incomingCast.icon)} alt="" />{incomingCast.name}</span>
-            <small>{incomingCast.isBonusWindow ? "MAX WINDOW" : "LATE BONUS"} +{incomingCast.timingBonus}</small>
+            <small>{incomingCast.drStage ? `DR ${incomingCast.drStage}/3` : incomingCast.isBonusWindow ? "MAX WINDOW" : "LATE BONUS"} +{incomingCast.timingBonus}</small>
           </div>
         )}
       </div>

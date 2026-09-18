@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../src/App";
+import * as analytics from "../src/analytics";
 import { mage } from "../src/classes/mage";
 import { rogue } from "../src/classes/rogue";
 import { GladiusPanel } from "../src/components/GladiusPanel";
@@ -100,6 +101,66 @@ describe("complete app flow", () => {
     expect(screen.queryByRole("heading", { name: "Deadly Throw" })).toBeNull();
     expect(screen.queryByText("Duplicate bind")).toBeNull();
     expect((screen.getByTestId("start-practice") as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("runs a five-action demo without counting it as a real practice session", async () => {
+    vi.useFakeTimers();
+    const track = vi.spyOn(analytics, "trackAnalyticsEvent");
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Try a 5-action demo" }));
+
+    expect(screen.getByText(/DEMO · Polymorph/)).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Sound off" })).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Restart" }));
+    for (let round = 0; round < 5; round += 1) {
+      const target = document.querySelector(".challenge-callout b")?.textContent?.match(/[123]/)?.[0];
+      expect(target).toBeDefined();
+      fireEvent.keyDown(window, { key: target });
+      expect(screen.getByTestId("feedback-copy").textContent).toBe("CORRECT");
+      await act(async () => vi.advanceTimersByTimeAsync(400));
+    }
+
+    expect(screen.getByText("DEMO COMPLETE")).not.toBeNull();
+    expect(screen.getByText("Correct").parentElement?.querySelector("strong")?.textContent).toBe("5");
+    fireEvent.click(screen.getByTestId("demo-again"));
+    expect(screen.getByTestId("arena-frame-1")).not.toBeNull();
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it("keeps saved loadouts and preferences untouched while trying and exiting the demo", () => {
+    localStorage.setItem("minis-mini-arena-simulator:v1", JSON.stringify({
+      contentVersion: 4,
+      selectedClassId: null,
+      bindingsByClass: { mage: { "polymorph:arena1": "Shift+Q" }, rogue: { "kick:arena2": "Ctrl+E" } },
+      enabledSpellsByClass: { mage: ["polymorph"], rogue: ["kick"] },
+      settings: { difficulty: "fast", sessionLength: 50, muted: false },
+    }));
+    render(<App />);
+    const before = localStorage.getItem("minis-mini-arena-simulator:v1");
+    fireEvent.click(screen.getByRole("button", { name: "Try a 5-action demo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
+    fireEvent.click(screen.getByRole("button", { name: "Exit demo" }));
+    expect(localStorage.getItem("minis-mini-arena-simulator:v1")).toBe(before);
+    chooseMage();
+    expect(screen.getByTestId("bind-polymorph-1").textContent).toContain("Shift+Q");
+    expect(screen.getByRole("button", { name: /Fast/ }).classList.contains("active")).toBe(true);
+  });
+
+  it("lets a demo player configure their own binds without importing example binds", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Try a 5-action demo" }));
+    for (let round = 0; round < 5; round += 1) {
+      await act(async () => vi.advanceTimersByTimeAsync(2500));
+      await act(async () => vi.advanceTimersByTimeAsync(700));
+    }
+    expect(screen.getByText("DEMO COMPLETE")).not.toBeNull();
+    fireEvent.click(screen.getByTestId("configure-after-demo"));
+    expect(screen.getByRole("heading", { name: "Mage keybinds" })).not.toBeNull();
+    const saved = JSON.parse(localStorage.getItem("minis-mini-arena-simulator:v1") ?? "{}");
+    expect(saved.bindingsByClass.mage).toBeUndefined();
+    expect(saved.settings.sessionLength).toBe(30);
+    expect(saved.settings.difficulty).toBe("normal");
   });
 
   it("migrates an older saved Rogue loadout to the focused macro pool", () => {
