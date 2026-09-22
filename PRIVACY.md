@@ -17,8 +17,10 @@ The following aggregate activity can be counted:
 - whether that browser has opened the trainer before, without sending a visitor ID.
 - whether a page load was a fresh navigation, reload, or browser back/forward action.
 
-The game does **not** send or store configured keys or mouse buttons, IP addresses, player names, answers, scores, reaction times, raw user-agent strings, persistent visitor identifiers, or local storage contents. The first-party database stores counters per day and broad category combination rather than individual event records.
+The game does **not** send or store configured keys or mouse buttons, IP addresses, player names, answers, scores, reaction times, raw user-agent strings, persistent visitor identifiers, or local storage contents. Analytics are stored as counters per day and broad category combination rather than individual event records.
+
+The optional in-app beta feedback form stores the category and message a player chooses to submit, its timestamp, the current page, and optional campaign tags already present in the page URL. It does not request an account, email address, player name, or contact information. Players are asked not to include personal information in the message. Submitted feedback is visible only in the token-protected private dashboard and is used to review bugs and product suggestions.
 
 Because collection is limited to anonymous aggregate counters and uses no cookies or persistent visitor identifiers, the app does not expose a per-browser analytics switch. Global Privacy Control remains compatible with this design: no personal information is sold or shared in the first place.
 
-Analytics failures never prevent the game from loading or running. The statistics are used only to understand adoption and improve the trainer.
+Analytics or feedback failures never prevent the game from loading or running. The information is used only to understand adoption and improve the trainer.

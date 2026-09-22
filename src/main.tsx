@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { initializeAnalytics } from "./analytics";
 import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
+import { FeedbackWidget } from "./components/FeedbackWidget";
 import { redirectToCanonicalDeployment } from "./deployment";
 import "./styles.css";
 
@@ -14,7 +15,7 @@ if (!redirecting) {
 
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      {showingStats ? <AnalyticsDashboard /> : <App />}
+      {showingStats ? <AnalyticsDashboard /> : <><App /><FeedbackWidget /></>}
     </StrictMode>,
   );
 }

@@ -12,6 +12,16 @@ interface DailyRow {
   count: number;
 }
 
+interface FeedbackRow {
+  id: number;
+  createdAt: string;
+  category: string;
+  message: string;
+  source: string;
+  campaign: string;
+  status: string;
+}
+
 async function groupedCounts(db: D1Database, column: string, condition = "1 = 1") {
   const result = await db.prepare(`
     SELECT ${column} AS value, SUM(count) AS count
@@ -65,6 +75,27 @@ async function navigationBreakdown(db: D1Database) {
   }
 }
 
+async function recentFeedback(db: D1Database) {
+  try {
+    const result = await db.prepare(`
+      SELECT
+        id,
+        created_at AS createdAt,
+        category,
+        message,
+        source,
+        campaign,
+        status
+      FROM feedback_messages
+      ORDER BY created_at DESC
+      LIMIT 100
+    `).all<FeedbackRow>();
+    return result.results;
+  } catch {
+    return [];
+  }
+}
+
 export const onRequestGet: PagesHandler<AnalyticsEnv> = async ({ request, env }) => {
   if (!env.ANALYTICS_DB || !env.ANALYTICS_ADMIN_TOKEN) {
     return jsonResponse({ error: "Stats dashboard is not configured" }, 503);
@@ -91,7 +122,7 @@ export const onRequestGet: PagesHandler<AnalyticsEnv> = async ({ request, env })
       ORDER BY day ASC, event ASC
     `).all<DailyRow>();
 
-    const [totals, classes, difficulties, rounds, countries, referrers, sources, campaigns, clients, navigationTypes] = await Promise.all([
+    const [totals, classes, difficulties, rounds, countries, referrers, sources, campaigns, clients, navigationTypes, feedback] = await Promise.all([
       groupedCounts(db, "event"),
       groupedCounts(db, "class_id", "class_id != '' AND event = 'class-selected'"),
       groupedCounts(db, "difficulty", "difficulty != '' AND event = 'practice-started'"),
@@ -102,6 +133,7 @@ export const onRequestGet: PagesHandler<AnalyticsEnv> = async ({ request, env })
       groupedCounts(db, "campaign", "campaign != ''"),
       clientBreakdowns(db),
       navigationBreakdown(db),
+      recentFeedback(db),
     ]);
 
     return jsonResponse({
@@ -117,6 +149,7 @@ export const onRequestGet: PagesHandler<AnalyticsEnv> = async ({ request, env })
       sources,
       campaigns,
       navigationTypes,
+      feedback,
       ...clients,
     });
   } catch (error) {

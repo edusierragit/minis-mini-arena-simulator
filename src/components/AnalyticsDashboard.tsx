@@ -11,6 +11,16 @@ interface DailyRow {
   count: number;
 }
 
+interface FeedbackRow {
+  id: number;
+  createdAt: string;
+  category: string;
+  message: string;
+  source: string;
+  campaign: string;
+  status: string;
+}
+
 interface AnalyticsSummary {
   generatedAt: string;
   window: "all-time";
@@ -30,6 +40,7 @@ interface AnalyticsSummary {
   viewports: CountRow[];
   visitTypes: CountRow[];
   navigationTypes: CountRow[];
+  feedback: FeedbackRow[];
 }
 
 const TOKEN_STORAGE_KEY = "minis-mini-arena-simulator:stats-token";
@@ -192,6 +203,30 @@ export function AnalyticsDashboard() {
               <Breakdown title="Page load type" rows={summary.navigationTypes} />
             </div>
             <p className="analytics-section-note">Page load types start with this beta update and do not backfill earlier opens.</p>
+
+            <section className="feedback-inbox">
+              <div className="feedback-inbox-heading">
+                <div>
+                  <h2>Beta feedback</h2>
+                  <p>Private suggestions submitted from the app. No account or player identifier is collected.</p>
+                </div>
+                <strong>{summary.feedback.length}</strong>
+              </div>
+              {summary.feedback.length === 0 ? <p className="analytics-section-note">No feedback yet.</p> : (
+                <div className="feedback-inbox-list">
+                  {summary.feedback.map((item) => (
+                    <article key={item.id}>
+                      <div>
+                        <span>{item.category}</span>
+                        <time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString()}</time>
+                        {(item.source || item.campaign) && <small>{[item.source, item.campaign].filter(Boolean).join(" · ")}</small>}
+                      </div>
+                      <p>{item.message}</p>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
 
             <section className="stats-breakdown daily-breakdown">
               <h2>Daily activity</h2>

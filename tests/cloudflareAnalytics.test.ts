@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeAnalyticsPayload } from "../functions/_analytics";
 import { onRequestPost } from "../functions/api/analytics";
+import { onRequestPost as onFeedbackPost } from "../functions/api/feedback";
 import { onRequestGet } from "../functions/api/stats";
 import type { AnalyticsEnv, D1PreparedStatement } from "../functions/_types";
 
@@ -213,5 +214,71 @@ describe("Cloudflare analytics payload validation", () => {
     expect(body.browsers).toEqual([]);
     expect(body.visitTypes).toEqual([]);
     expect(body.navigationTypes).toEqual([]);
+  });
+});
+
+describe("Cloudflare beta feedback", () => {
+  it("stores only the validated feedback fields", async () => {
+    let boundValues: Array<string | number | null> = [];
+    const statement: D1PreparedStatement = {
+      bind: (...values) => {
+        boundValues = values;
+        return statement;
+      },
+      run: async () => ({ results: [], success: true }),
+      all: async () => ({ results: [], success: true }),
+    };
+    const env: AnalyticsEnv = { ANALYTICS_DB: { prepare: () => statement } };
+    const request = new Request("https://arena.pages.dev/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://arena.pages.dev" },
+      body: JSON.stringify({
+        category: "idea",
+        message: "  Add a moving cast bar for every interrupt.  ",
+        page: "/practice",
+        source: "Reddit WorldOfPvP",
+        campaign: "Beta Launch",
+        playerName: "must-not-be-stored",
+      }),
+    });
+
+    const response = await onFeedbackPost({ request, env });
+
+    expect(response.status).toBe(201);
+    expect(boundValues).toEqual([
+      "idea",
+      "Add a moving cast bar for every interrupt.",
+      "/practice",
+      "reddit-worldofpvp",
+      "beta-launch",
+    ]);
+  });
+
+  it("rejects cross-origin and invalid feedback", async () => {
+    const statement: D1PreparedStatement = {
+      bind: () => statement,
+      run: async () => ({ results: [], success: true }),
+      all: async () => ({ results: [], success: true }),
+    };
+    const env: AnalyticsEnv = { ANALYTICS_DB: { prepare: () => statement } };
+    const crossOrigin = await onFeedbackPost({
+      request: new Request("https://arena.pages.dev/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: "https://spam.example" },
+        body: JSON.stringify({ category: "idea", message: "This is long enough" }),
+      }),
+      env,
+    });
+    const tooShort = await onFeedbackPost({
+      request: new Request("https://arena.pages.dev/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: "https://arena.pages.dev" },
+        body: JSON.stringify({ category: "bug", message: "short" }),
+      }),
+      env,
+    });
+
+    expect(crossOrigin.status).toBe(403);
+    expect(tooShort.status).toBe(400);
   });
 });

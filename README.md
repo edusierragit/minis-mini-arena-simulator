@@ -10,6 +10,8 @@ Built by [Eduardo Sierra](https://x.com/eduardo39657119) and **Minimalistic**.
 
 Privacy-friendly usage analytics use a same-origin Cloudflare Pages Function backed by aggregate D1 counters. They cover the practice funnel, acquisition, and broad anonymous client categories; binds and performance results never leave the player's browser. See [PRIVACY.md](PRIVACY.md).
 
+The in-app beta feedback box stores only the submitted category, message, timestamp, page, and optional campaign tags in D1. It does not request an account or store a player identifier, IP address, binds, or scores. Suggestions are visible only in the token-protected dashboard.
+
 Ally-dispel drills show real WotLK debuff icons on Self, Party 1, or Party 2. Challenges respect dispel categories (Curse, Magic, Poison, and Disease), so a class is only asked to remove effects it can actually dispel. Bundled WotLK success/failure sounds can be muted from the practice HUD.
 
 ## Install and run
